@@ -3149,6 +3149,25 @@
                 console.log('🔍 window.location.hostname:', window.location.hostname);
                 console.log('🔍 window.location.origin:', window.location.origin);
                 
+                // Nejprve zkontrolujeme, zda vůbec máme nějaké biometrické klíče uložené
+                console.log('🔍 Kontroluji dostupné biometrické klíče...');
+                
+                try {
+                    // Zkusíme získat informace o dostupných klíčích pomocí newer API
+                    if ('PublicKeyCredential' in window && 
+                        'isUserVerifyingPlatformAuthenticatorAvailable' in window.PublicKeyCredential) {
+                        
+                        const isPlatformSupported = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+                        console.log('🔍 Platform authenticator available:', isPlatformSupported);
+                        
+                        if (!isPlatformSupported) {
+                            throw new Error('Biometrická autentifikace není dostupná na tomto zařízení');
+                        }
+                    }
+                } catch (supportError) {
+                    console.warn('⚠️ Nelze detekovat podporu biometrických klíčů:', supportError);
+                }
+                
                 if (!window.PublicKeyCredential) {
                     throw new Error('WebAuthn není podporováno v tomto prohlížeči');
                 }
@@ -3202,9 +3221,11 @@
                 // Nový pokus - pouze jedna varianta s přesně stejným rpId jako při registraci
                 const publicKeyCredentialRequestOptions = {
                     challenge: challenge,
-                    allowCredentials: [], // Prázdný seznam umožní použití všech dostupných credentials
-                    userVerification: 'discouraged', // Zmírnění požadavků na verifikaci
-                    timeout: 120000, // Delší timeout pro dostatek času
+                    // DŮLEŽITÉ: Ponecháváme allowCredentials neuvedené vůbec, místo prázdného pole
+                    // To umožní prohlížeči najít všechny dostupné klíče
+                    // allowCredentials: [],
+                    userVerification: 'preferred', // Změna z 'discouraged' na 'preferred' pro lepší kompatibilitu
+                    timeout: 300000, // Delší timeout (5 minut) pro víc času na ověření
                     rpId: effectiveRpId
                 };
                 
@@ -3244,14 +3265,23 @@
                 console.error('❌ Error message:', error.message);
                 console.error('❌ Error stack:', error.stack);
                 
+                // Podrobnější zpracování známých chyb WebAuthn
                 if (error.name === 'NotAllowedError') {
-                    showToast('❌', 'Biometric Error', 'Biometrické ověření bylo zrušeno nebo odmítnuto. Zkuste to znovu a potvrďte otisk prstu.', 'error');
+                    console.log('🔍 NotAllowedError - běžná chyba při prvním použití nebo když není zaregistrován žádný klíč');
+                    
+                    showToast('❌', 'Biometric Error', 'Biometrické ověření bylo zrušeno nebo není dostupné. Potřebujete se nejprve zaregistrovat v admin sekci.', 'error');
+                    
+                    // Zobrazit další nápovědu v konzoli
+                    console.log('💡 ŘEŠENÍ: Přihlaste se nejprve RFID kartou, pak v admin sekci zaregistrujte biometrické ověření pro vašeho uživatele');
+                    
                 } else if (error.name === 'NotSupportedError') {
-                    showToast('❌', 'Biometric Error', 'Biometrické ověření není podporováno na vašem zařízení nebo prohlížeči. Zkuste Chrome/Edge.', 'error');
+                    showToast('❌', 'Biometric Error', 'Biometrické ověření není podporováno na vašem zařízení nebo prohlížeči. Zkuste Edge nebo Chrome.', 'error');
                 } else if (error.name === 'InvalidStateError') {
                     showToast('❌', 'Biometric Error', 'Nejsou k dispozici žádné přístupové klíče na tomto zařízení. Zkuste se nejprve zaregistrovat v admin sekci.', 'error');
-                } else if (error.message.includes('k dispozici žádné přístupové klíče')) {
-                    showToast('❌', 'Biometric Error', 'Nenalezeny žádné biometrické klíče pro tuto doménu. Potřebujete nejprve registraci u admina.', 'error');
+                } else if (error.name === 'SecurityError') {
+                    showToast('❌', 'Biometric Error', 'Bezpečnostní chyba WebAuthn. Zkontrolujte adresu stránky a zkuste to znovu.', 'error');
+                } else if (error.message.includes('privacy-considerations-client')) {
+                    showToast('❌', 'Biometric Error', 'Váš prohlížeč má omezení pro WebAuthn. Zkuste Chrome nebo Edge se zapnutým Windows Hello.', 'error');
                 } else {
                     showToast('❌', 'Biometric Error', 'Chyba při biometrickém ověření: ' + error.message, 'error');
                 }
@@ -3321,10 +3351,10 @@
                     ],
                     authenticatorSelection: {
                         authenticatorAttachment: "platform",
-                        userVerification: "discouraged", // Změna z 'required' na 'discouraged' pro lepší kompatibilitu
+                        userVerification: "preferred", // Změna na 'preferred' pro lepší kompatibilitu
                         requireResidentKey: false // Pro lepší kompatibilitu
                     },
-                    timeout: 120000, // Delší timeout pro více času
+                    timeout: 300000, // Delší timeout (5 minut) pro víc času na ověření
                     attestation: "none" // Změna z "direct" na "none" pro lepší kompatibilitu
                 };
                 
