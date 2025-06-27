@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Měsíční report WEBCofee</title>
+    <style>
+        /* Základní styly */
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+        }
+        
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #EB3C24;
+        }
+        
+        .logo {
+            width: 120px;
+            height: auto;
+            margin-bottom: 10px;
+        }
+        
+        h1 {
+            color: #EB3C24;
+            font-size: 24px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+            margin-top: 5px;
+        }
+        
+        .content {
+            padding: 20px 0;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        
+        .stats-container {
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stats-title {
+            font-size: 18px;
+            color: #EB3C24;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-gap: 15px;
+        }
+        
+        .stat-item {
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .balance-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-radius: 5px;
+            border-left: 4px solid #4a90e2;
+        }
+        
+        .balance-title {
+            color: #4a90e2;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .balance-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .balance-label {
+            color: #555;
+        }
+        
+        .balance-value {
+            font-weight: bold;
+        }
+        
+        .negative {
+            color: #EB3C24;
+        }
+        
+        .positive {
+            color: #28a745;
+        }
+        
+        .neutral {
+            color: #333;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .coffee-icon {
+            font-size: 24px;
+            color: #795548;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="https://ejzvytylzhtxqvpgyyic.supabase.co/storage/v1/object/public/email-assets/sfs-logo.png" alt="SFS Logo" class="logo">
+            <h1>WEBCofee</h1>
+            <div class="subtitle">Měsíční přehled spotřeby</div>
+        </div>
+        
+        <div class="content">
+            <p class="greeting">Dobrý den, {{name}},</p>
+            
+            <p>zde je Váš měsíční přehled spotřeby v kávovém systému WEBCofee za období <strong>{{month}}</strong>.</p>
+            
+            <div class="stats-container">
+                <div class="stats-title">Přehled spotřeby</div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Vypito káv</div>
+                        <div class="stat-value">{{coffee_count}} ☕</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Celková útrata</div>
+                        <div class="stat-value">{{total_spent}} Kč</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Počet dobití kreditu</div>
+                        <div class="stat-value">{{credit_topups}}×</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Celkem dobito</div>
+                        <div class="stat-value">{{credit_amount}} Kč</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="balance-section">
+                <div class="balance-title">Stav kreditu</div>
+                <div class="balance-row">
+                    <div class="balance-label">Na začátku měsíce:</div>
+                    <div class="balance-value">{{start_balance}} Kč</div>
+                </div>
+                <div class="balance-row">
+                    <div class="balance-label">Aktuální stav:</div>
+                    <div class="balance-value">{{end_balance}} Kč</div>
+                </div>
+            </div>
+            
+            <p class="text-center" style="margin-top: 25px;">
+                <span class="coffee-icon">☕</span>
+                <br>
+                Děkujeme, že využíváte WEBCofee!
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>Tento e-mail byl automaticky vygenerován systémem WEBCofee.</p>
+            <p>SFS intec s.r.o. &copy; 2025</p>
+        </div>
+    </div>
+</body>
+</html>

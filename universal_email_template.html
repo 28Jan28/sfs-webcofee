@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEBCofee</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .wrapper {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .header {
+            background-color: #EB3C24;
+            padding: 15px;
+            text-align: center;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .content {
+            background: white;
+            padding: 20px;
+        }
+        .transaction-box {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            margin-bottom: 15px;
+        }
+        .transaction-title {
+            color: #EB3C24;
+            font-weight: bold;
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .transaction-row {
+            padding: 8px 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .transaction-row:last-child {
+            border-bottom: none;
+        }
+        .balance-box {
+            background-color: #ffeeee;
+            border-left: 3px solid #EB3C24;
+            margin-bottom: 15px;
+        }
+        .balance-title {
+            color: #EB3C24;
+            font-weight: bold;
+            padding: 10px 15px;
+        }
+        .balance-row {
+            padding: 8px 15px;
+            border-bottom: 1px solid #ffdddd;
+        }
+        .balance-row:last-child {
+            border-bottom: none;
+        }
+        .thanks {
+            text-align: center;
+            margin: 20px 0;
+            color: #EB3C24;
+            font-weight: bold;
+        }
+        .footer {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .icon {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0">
+            <!-- Hlavička -->
+            <tr>
+                <td class="header" bgcolor="#EB3C24" align="center">
+                    WEBCofee
+                </td>
+            </tr>
+            
+            <!-- Obsah -->
+            <tr>
+                <td class="content">
+                    <p>Dobrý den {{name}},</p>
+                    <p>potvrzujeme Vaši transakci v kávovém systému WEBCofee.</p>
+                    
+                    <!-- Detaily transakce -->
+                    <table class="transaction-box" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f8f9fa" style="border: 1px solid #e9ecef;">
+                        <tr>
+                            <td class="transaction-title" style="color: #EB3C24; font-weight: bold; padding: 10px; text-align: center; border-bottom: 1px solid #e9ecef;">
+                                🔒 Detaily transakce
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="transaction-row" style="padding: 8px 15px; border-bottom: 1px solid #e9ecef;">
+                                <span class="icon">🏷️</span> Typ transakce: <strong>{{coffee_name}}</strong>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="transaction-row" style="padding: 8px 15px; border-bottom: 1px solid #e9ecef;">
+                                <span class="icon">💰</span> Částka: <strong>{{price}} Kč</strong>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="transaction-row" style="padding: 8px 15px;">
+                                <span class="icon">📅</span> Datum a čas: <strong>{{date}}</strong>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <!-- Stav kreditu -->
+                    <table class="balance-box" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffeeee" style="border-left: 3px solid #EB3C24;">
+                        <tr>
+                            <td class="balance-title" style="color: #EB3C24; font-weight: bold; padding: 10px 15px;">
+                                💼 Stav kreditu
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="balance-row" style="padding: 8px 15px; border-bottom: 1px solid #ffdddd;">
+                                Před transakcí: <strong>{{old_credit}} Kč</strong>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="balance-row" style="padding: 8px 15px;">
+                                Po transakci: <strong>{{new_credit}} Kč</strong>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <p class="thanks" style="text-align: center; margin: 20px 0; color: #EB3C24; font-weight: bold;">
+                        Děkujeme, že používáte WEBCofee!
+                    </p>
+                </td>
+            </tr>
+            
+            <!-- Patička -->
+            <tr>
+                <td class="footer" bgcolor="#333333" style="color: white; padding: 10px; text-align: center; font-size: 12px;">
+                    <p style="margin: 5px 0;">Tento e-mail byl automaticky vygenerován systémem WEBCofee.</p>
+                    <p style="margin: 5px 0;">SFS intec s.r.o. &copy; 2025</p>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

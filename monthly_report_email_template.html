@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEBCofee - Měsíční přehled</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .email-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .header {
+            background-color: #EB3C24;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .content {
+            background-color: white;
+            padding: 20px;
+        }
+        .greeting {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .description {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .report-box {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            margin-bottom: 20px;
+        }
+        .report-title {
+            padding: 10px 15px;
+            border-bottom: 1px solid #e9ecef;
+            font-weight: bold;
+            color: #EB3C24;
+            text-align: center;
+        }
+        .report-row {
+            padding: 8px 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .report-row:last-child {
+            border-bottom: none;
+        }
+        .icon {
+            display: inline-block;
+            margin-right: 6px;
+            width: 20px;
+            text-align: center;
+        }
+        .balance-box {
+            background-color: #ffeeee;
+            border-left: 3px solid #EB3C24;
+            margin-bottom: 20px;
+        }
+        .balance-title {
+            padding: 10px 15px;
+            border-bottom: 1px solid #ffdddd;
+            font-weight: bold;
+            color: #EB3C24;
+        }
+        .balance-row {
+            padding: 8px 15px;
+            border-bottom: 1px solid #ffdddd;
+            display: flex;
+            justify-content: space-between;
+        }
+        .balance-row:last-child {
+            border-bottom: none;
+        }
+        .thanks {
+            text-align: center;
+            margin: 20px 0;
+            color: #EB3C24;
+            font-weight: bold;
+        }
+        .footer {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .value {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f5f5">
+        <tr>
+            <td align="center" valign="top" style="padding: 20px 0;">
+                <!-- Hlavní kontejner emailu -->
+                <table class="email-container" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff">
+                    <!-- Hlavička -->
+                    <tr>
+                        <td class="header" bgcolor="#EB3C24" align="center">
+                            WEBCofee - Měsíční přehled
+                        </td>
+                    </tr>
+                    
+                    <!-- Obsah -->
+                    <tr>
+                        <td class="content" style="padding: 20px;">
+                            <p class="greeting">Dobrý den {{name}},</p>
+                            <p class="description">zasíláme Vám měsíční přehled Vaší aktivity v kávovém systému WEBCofee.</p>
+                            
+                            <!-- Měsíční přehled -->
+                            <table class="report-box" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f8f9fa" style="border: 1px solid #e9ecef;">
+                                <tr>
+                                    <td class="report-title" style="padding: 10px 15px; border-bottom: 1px solid #e9ecef; color: #EB3C24; font-weight: bold; text-align: center;">
+                                        📊 MĚSÍČNÍ PŘEHLED ZA {{month}}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="report-row" style="padding: 8px 15px; border-bottom: 1px solid #e9ecef;">
+                                        <span class="icon">☕</span>
+                                        Vypito káv: <span class="value">{{coffee_count}}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="report-row" style="padding: 8px 15px; border-bottom: 1px solid #e9ecef;">
+                                        <span class="icon">💰</span>
+                                        Celková útrata: <span class="value">{{total_spent}} Kč</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="report-row" style="padding: 8px 15px; border-bottom: 1px solid #e9ecef;">
+                                        <span class="icon">💳</span>
+                                        Počet dobití kreditu: <span class="value">{{credit_topups}}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="report-row" style="padding: 8px 15px;">
+                                        <span class="icon">💵</span>
+                                        Celkem dobito: <span class="value">{{total_credit}} Kč</span>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Stav kreditu -->
+                            <table class="balance-box" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffeeee" style="border-left: 3px solid #EB3C24;">
+                                <tr>
+                                    <td class="balance-title" style="padding: 10px 15px; border-bottom: 1px solid #ffdddd; color: #EB3C24; font-weight: bold;">
+                                        💼 Stav kreditu
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="balance-row" style="padding: 8px 15px; border-bottom: 1px solid #ffdddd;">
+                                        Zůstatek na začátku měsíce: <span class="value">{{start_balance}} Kč</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="balance-row" style="padding: 8px 15px;">
+                                        Aktuální zůstatek: <span class="value">{{end_balance}} Kč</span>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <p class="thanks">Děkujeme, že používáte WEBCofee!</p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Patička -->
+                    <tr>
+                        <td class="footer" bgcolor="#333333" style="padding: 10px; text-align: center; color: white; font-size: 12px;">
+                            <p>Tento e-mail byl automaticky vygenerován systémem WEBCofee.</p>
+                            <p>SFS intec s.r.o. &copy; 2025</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

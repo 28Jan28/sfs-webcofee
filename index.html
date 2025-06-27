@@ -1,0 +1,3431 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEBCofee - Kávovar systém</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- EmailJS integrace -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            // EmailJS inicializace s public key
+            emailjs.init("7hyRlSOcJZyjww9Ng"); // Správný veřejný klíč pro službu EmailJS
+        })();
+    </script>
+    <style>
+        :root {
+            --gray: #999999;
+            --red: #EB3C24;
+            --black: #000000;
+            --white: #FFFFFF;
+        }
+        
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        body {
+            background: url('https://public.youware.com/users-website-assets/prod/0f1254a1-1aa6-4aec-a97b-8bd81c837f2a/74a91e13e3f944929d8a3d46779fc836.jpg') no-repeat center center fixed;
+            background-size: cover;
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.7);
+            z-index: -1;
+        }
+        
+        .process-block {
+            background: linear-gradient(135deg, var(--red) 0%, #ff4436 100%);
+            color: var(--white);
+            border: 2px solid var(--black);
+            box-shadow: 4px 4px 0px var(--black);
+            transition: all 0.2s ease;
+        }
+        
+        .process-block:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px var(--black);
+        }
+        
+        /* Mobile touch optimizations */
+        .touch-manipulation {
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        /* Larger touch targets for mobile */
+        @media (max-width: 640px) {
+            .coffee-button {
+                padding: 1rem;
+            }
+            
+            input, select, button {
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+            
+            /* Better spacing for mobile */
+            .space-y-2 > * + * {
+                margin-top: 0.75rem;
+            }
+            
+            /* Mobile table improvements */
+            table {
+                font-size: 0.875rem;
+            }
+            
+            table th, table td {
+                padding: 0.5rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 120px;
+            }
+        }
+        
+        .operational-block {
+            background: linear-gradient(135deg, var(--white) 0%, #f8f8f8 100%);
+            color: var(--black);
+            border: 2px solid var(--red);
+            box-shadow: 3px 3px 0px var(--red);
+        }
+        
+        .support-block {
+            background: linear-gradient(135deg, var(--gray) 0%, #aaaaaa 100%);
+            color: var(--white);
+            border: 2px solid var(--black);
+            box-shadow: 3px 3px 0px var(--black);
+        }
+        
+        .card {
+            background: linear-gradient(135deg, var(--white) 0%, #fafafa 100%);
+            border: 3px solid var(--red);
+            box-shadow: 6px 6px 0px var(--black);
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--red) 0%, #ff4436 100%);
+            color: var(--white);
+            border: 2px solid var(--black);
+            box-shadow: 3px 3px 0px var(--black);
+            transition: all 0.1s ease;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        
+        .btn-primary:hover {
+            transform: translate(1px, 1px);
+            box-shadow: 2px 2px 0px var(--black);
+            background: linear-gradient(135deg, #ff4436 0%, var(--red) 100%);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--white) 0%, #f5f5f5 100%);
+            color: var(--black);
+            border: 2px solid var(--red);
+            box-shadow: 3px 3px 0px var(--red);
+            transition: all 0.1s ease;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        
+        .btn-secondary:hover {
+            transform: translate(1px, 1px);
+            box-shadow: 2px 2px 0px var(--red);
+            background: linear-gradient(135deg, #f5f5f5 0%, var(--white) 100%);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, var(--black) 0%, #333333 100%);
+            color: var(--white);
+            border: 2px solid var(--red);
+            box-shadow: 3px 3px 0px var(--red);
+            transition: all 0.1s ease;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        
+        .btn-danger:hover {
+            transform: translate(1px, 1px);
+            box-shadow: 2px 2px 0px var(--red);
+            background: linear-gradient(135deg, #333333 0%, var(--black) 100%);
+        }
+        
+        .input-field {
+            background: var(--white);
+            border: 3px solid var(--red);
+            box-shadow: inset 2px 2px 0px #ffebeb;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            box-shadow: inset 2px 2px 0px #ffebeb, 0 0 0 3px rgba(235, 60, 36, 0.3);
+            transform: scale(1.02);
+        }
+        
+        .coffee-icon { 
+            font-size: 3rem;
+            filter: drop-shadow(3px 3px 0px var(--red));
+        }
+        
+        .title-text {
+            color: var(--black);
+            text-shadow: 2px 2px 0px var(--red);
+            font-weight: bold;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--white);
+            border-top: 4px solid var(--red);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .balance-positive { 
+            color: var(--black); 
+            text-shadow: 1px 1px 0px var(--white);
+        }
+        .balance-negative { 
+            color: var(--red); 
+            text-shadow: 1px 1px 0px var(--white);
+            font-weight: bold;
+        }
+        
+        .transaction-credit { 
+            color: var(--black); 
+            font-weight: bold; 
+            background: rgba(235, 60, 36, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .transaction-debit { 
+            color: var(--red); 
+            font-weight: bold;
+            background: rgba(153, 153, 153, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 3px 3px 0px var(--black);
+        }
+        
+        th, td {
+            border: 1px solid var(--red);
+            padding: 12px 8px;
+        }
+        
+        th {
+            background: linear-gradient(135deg, var(--red) 0%, #ff4436 100%);
+            color: var(--white);
+            font-weight: bold;
+            text-shadow: 1px 1px 0px var(--black);
+        }
+        
+        tr:nth-child(even) {
+            background: linear-gradient(135deg, #fafafa 0%, var(--white) 100%);
+        }
+        
+        tr:nth-child(odd) {
+            background: var(--white);
+        }
+        
+        .admin-login-prompt {
+            background: linear-gradient(135deg, var(--red) 0%, #ff4436 100%);
+            color: var(--white);
+            border: 3px solid var(--black);
+            box-shadow: 4px 4px 0px var(--black);
+            border-radius: 8px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .success-message {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: var(--white);
+            border: 2px solid var(--black);
+            box-shadow: 3px 3px 0px var(--black);
+            border-radius: 6px;
+        }
+        
+        .error-message {
+            background: linear-gradient(135deg, var(--red) 0%, #ff4436 100%);
+            color: var(--white);
+            border: 2px solid var(--black);
+            box-shadow: 3px 3px 0px var(--black);
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading" class="flex items-center justify-center min-h-screen">
+        <div class="text-center">
+            <div class="coffee-icon mb-4">☕</div>
+            <div class="text-3xl title-text mb-4">WEBCofee</div>
+            <div class="loading-spinner mx-auto"></div>
+        </div>
+    </div>
+
+    <!-- RFID Login Screen -->
+    <div id="loginScreen" class="hidden min-h-screen flex items-center justify-center p-2 sm:p-4">
+        <div class="card p-4 sm:p-6 max-w-lg w-full text-center relative">
+            <!-- Časové a datumové informace - responzivní pozice -->
+            <div class="absolute top-2 sm:top-3 left-2 sm:left-3 text-left">
+                <div id="currentTime" class="text-sm sm:text-lg font-bold" style="color: var(--red);">00:00:00</div>
+                <div id="currentDate" class="text-xs sm:text-sm font-medium" style="color: var(--black);">1.1.2025</div>
+                <div id="nameDay" class="text-xs font-medium" style="color: var(--gray);">Svátek má: ...</div>
+            </div>
+            
+            <!-- Logo firmy - responzivní pozice -->
+            <div class="absolute top-2 sm:top-3 right-2 sm:right-3">
+                <img src="60v4bruhye.png" alt="SFS Logo" class="h-6 sm:h-8 w-auto">
+            </div>
+            
+            <!-- Stav pokladny - responzivní pozice -->
+            <div class="absolute bottom-2 sm:bottom-3 right-2 sm:right-3 text-right">
+                <div class="text-base sm:text-lg" style="color: var(--red);">💰</div>
+                <div id="cashRegisterStatus" class="text-xs font-bold" style="color: var(--black);">0 Kč</div>
+            </div>
+            
+            <div class="coffee-icon mb-4 mt-12 sm:mt-8 text-3xl sm:text-4xl">☕</div>
+            <h1 class="text-xl sm:text-2xl title-text mb-2">WEBCofee</h1>
+            <p class="text-black mb-4 sm:mb-6 font-medium text-sm sm:text-base px-2">Přiložte RFID kartu pro přihlášení</p>
+            
+            <div class="relative mb-4 sm:mb-6">
+                <input 
+                    type="text" 
+                    id="rfidInput" 
+                    class="input-field w-full p-3 sm:p-4 text-center text-base sm:text-lg font-mono font-bold"
+                    placeholder="Čekám na sken karty..."
+                    autocomplete="off"
+                    autofocus
+                >
+            </div>
+            
+            <div class="text-xs sm:text-sm mb-3 sm:mb-4 px-2" style="color: var(--gray); font-weight: bold;">
+                Karta se načte automaticky po přiložení
+            </div>
+            
+            <!-- Authentication Methods -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <button id="nfcLoginBtn" class="btn-primary px-4 py-3 text-sm min-h-[44px] touch-manipulation">
+                    📱 NFC přihlášení
+                </button>
+                <button id="biometricLoginBtn" class="btn-primary px-4 py-3 text-sm min-h-[44px] touch-manipulation">
+                    👆 Biometrické
+                </button>
+            </div>
+            
+            <div id="loginError" class="error-message mb-3 sm:mb-4 p-2 sm:p-3 hidden text-sm"></div>
+            
+            <button id="adminLoginBtn" class="btn-secondary px-4 sm:px-6 py-3 sm:py-3 text-sm min-h-[44px] touch-manipulation">
+                🔧 Admin přístup
+            </button>
+            
+            <!-- Admin RFID Prompt -->
+            <div id="adminRfidPrompt" class="hidden mt-3 sm:mt-4">
+                <div class="admin-login-prompt p-3 sm:p-4">
+                    <div class="text-base sm:text-lg font-bold mb-2">🔒 Admin přístup</div>
+                    <p class="text-xs sm:text-sm mb-3 sm:mb-4">Přiložte admin RFID kartu</p>
+                    <input 
+                        type="text" 
+                        id="adminRfidInput" 
+                        class="input-field w-full p-3 text-center font-mono font-bold text-sm sm:text-base"
+                        placeholder="Čekání na admin kartu..."
+                        autocomplete="off"
+                    >
+                    <div id="adminLoginError" class="error-message p-2 mt-2 sm:mt-3 hidden text-xs sm:text-sm"></div>
+                    <div class="text-xs mt-2 text-white">Tip: Pro admin přístup přiložte správnou kartu</div>
+                    <div class="flex flex-col sm:flex-row gap-2 sm:gap-0 mt-3">
+                        <button id="manualAdminBtn" class="btn-primary sm:mr-2 px-4 py-3 text-sm min-h-[44px] flex-1 sm:flex-none touch-manipulation">
+                            Zadat ručně
+                        </button>
+                        <button id="cancelAdminBtn" class="btn-secondary px-4 py-3 text-sm min-h-[44px] flex-1 sm:flex-none touch-manipulation">
+                            Zrušit
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Dashboard -->
+    <div id="userDashboard" class="hidden min-h-screen p-2 sm:p-4">
+        <div class="max-w-6xl mx-auto">
+            <!-- Header -->
+            <div class="card p-3 sm:p-6 mb-4 sm:mb-6">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
+                    <div class="text-center sm:text-left">
+                        <h1 class="text-lg sm:text-2xl title-text" id="userDashboardName">Jméno uživatele</h1>
+                        <p class="text-black font-medium text-sm sm:text-base" id="userDashboardCard">Karta: 1234567890</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm sm:text-lg font-bold" style="color: var(--red);">💰 Kredit</div>
+                        <div class="text-2xl sm:text-3xl font-bold" id="userDashboardBalance">0 Kč</div>
+                    </div>
+                    <button id="userLogoutBtn" class="btn-danger px-4 py-3 text-sm sm:text-base min-h-[44px] touch-manipulation">
+                        🚪 Odhlásit se
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Coffee Selection -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-4 sm:mb-6">
+                <div class="process-block p-4 sm:p-6 text-center rounded-lg">
+                    <button class="coffee-button w-full h-full min-h-[100px] sm:min-h-[120px] touch-manipulation" data-product="espresso" data-price="5">
+                        <div class="text-3xl sm:text-4xl mb-2">☕</div>
+                        <div class="font-bold text-base sm:text-lg">Espresso</div>
+                        <div class="text-white font-bold text-sm sm:text-base">💵 5 Kč</div>
+                    </button>
+                </div>
+                <div class="process-block p-4 sm:p-6 text-center rounded-lg">
+                    <button class="coffee-button w-full h-full min-h-[100px] sm:min-h-[120px] touch-manipulation" data-product="cappuccino" data-price="5">
+                        <div class="text-3xl sm:text-4xl mb-2">☕</div>
+                        <div class="font-bold text-base sm:text-lg">Cappuccino</div>
+                        <div class="text-white font-bold text-sm sm:text-base">💵 5 Kč</div>
+                    </button>
+                </div>
+                <div class="process-block p-4 sm:p-6 text-center rounded-lg sm:col-span-2 lg:col-span-1">
+                    <button class="coffee-button w-full h-full min-h-[100px] sm:min-h-[120px] touch-manipulation" data-product="latte" data-price="5">
+                        <div class="text-3xl sm:text-4xl mb-2">☕</div>
+                        <div class="font-bold text-base sm:text-lg">Latte</div>
+                        <div class="text-white font-bold text-sm sm:text-base">💵 5 Kč</div>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Transactions -->
+            <div class="card p-3 sm:p-6">
+                <h2 class="text-lg sm:text-xl title-text mb-3 sm:mb-4">📊 Vaše transakce</h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm sm:text-base">
+                        <thead>
+                            <tr>
+                                <th class="text-left p-2 sm:p-3">📅 Datum</th>
+                                <th class="text-left p-2 sm:p-3">📋 Typ</th>
+                                <th class="text-right p-2 sm:p-3">💰 Částka</th>
+                                <th class="text-left p-2 sm:p-3 hidden sm:table-cell">📝 Popis</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTransactionsList">
+                            <tr><td colspan="4" class="text-center p-3 font-medium">Načítání transakcí...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="hidden min-h-screen p-2 sm:p-4">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="card p-3 sm:p-6 mb-4 sm:mb-6">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
+                    <div class="text-center sm:text-left">
+                        <h1 class="text-lg sm:text-2xl title-text">🔧 WEBCofee Admin</h1>
+                        <p class="text-black font-medium text-sm sm:text-base">Správa uživatelů a transakcí</p>
+                    </div>
+                    <button id="adminLogoutBtn" class="btn-danger px-4 py-3 text-sm sm:text-base min-h-[44px] touch-manipulation">
+                        🚪 Odhlásit se
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
+                <!-- User Management -->
+                <div class="space-y-3 sm:space-y-6">
+                    <div class="card p-3 sm:p-6">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 sm:mb-4 gap-2 sm:gap-0">
+                            <h2 class="text-base sm:text-xl title-text">👥 Správa uživatelů</h2>
+                            <button id="addUserBtn" class="btn-primary px-3 py-2 text-sm min-h-[44px] touch-manipulation">
+                                ➕ Přidat uživatele
+                            </button>
+                        </div>
+                        
+                        <div class="space-y-2" id="userList">
+                            <div class="text-center p-3 font-medium">Načítání uživatelů...</div>
+                        </div>
+                            <p class="text-gray-500 p-3 font-medium text-sm sm:text-base">Načítání uživatelů...</p>
+                        </div>
+                    </div>
+                    
+                    <!-- WEBCofee pokladna - nová karta -->
+                    <div class="card p-3 sm:p-6">
+                        <h2 class="text-base sm:text-xl title-text mb-3 sm:mb-4">💵 WEBCofee pokladna</h2>
+                        
+                        <div class="mb-4 sm:mb-6">
+                            <div class="text-sm sm:text-lg font-bold mb-2">Aktuální stav pokladny:</div>
+                            <div class="text-2xl sm:text-3xl font-bold balance-positive" id="cashRegisterAmount">
+                                <span class="loading-spinner inline-block mr-2 w-5 h-5"></span> Načítání...
+                            </div>
+                            <div class="text-xs sm:text-sm mt-2" style="color: var(--gray);">
+                                Poslední aktualizace: <span id="cashRegisterLastUpdated">-</span>
+                            </div>
+                        </div>
+                        
+                        <form id="cashRegisterForm" class="space-y-3 sm:space-y-4">
+                            <div>
+                                <label class="block text-black mb-2 font-bold text-sm sm:text-base">💰 Nový stav pokladny (Kč)</label>
+                                <input 
+                                    type="number" 
+                                    id="cashRegisterNewAmount" 
+                                    placeholder="Zadejte částku"
+                                    class="input-field w-full p-3 font-medium text-sm sm:text-base"
+                                    required
+                                    min="0"
+                                >
+                            </div>
+                            
+                            <div>
+                                <label class="block text-black mb-2 font-bold text-sm sm:text-base">📝 Poznámka (volitelné)</label>
+                                <input 
+                                    type="text" 
+                                    id="cashRegisterNote" 
+                                    placeholder="Např. 'Výběr hotovosti'"
+                                    class="input-field w-full p-3 font-medium text-sm sm:text-base"
+                                >
+                            </div>
+                            
+                            <button 
+                                type="submit" 
+                                class="btn-primary w-full p-3 text-sm sm:text-base min-h-[44px] touch-manipulation"
+                            >
+                                💾 Aktualizovat stav pokladny
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Credit & Transactions -->
+                <div class="space-y-3 sm:space-y-6">
+                    <div class="card p-3 sm:p-6">
+                        <h2 class="text-base sm:text-xl title-text mb-3 sm:mb-4">💳 Dobít kredit</h2>
+                        
+                        <form id="creditForm" class="space-y-3 sm:space-y-4">
+                            <div>
+                                <label class="block text-black mb-2 font-bold text-sm sm:text-base">👤 Vyberte uživatele</label>
+                                <select id="creditUserId" class="input-field w-full p-3 font-medium text-sm sm:text-base" required>
+                                    <option value="">Vyberte uživatele...</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-black mb-2 font-bold text-sm sm:text-base">💰 Částka (Kč)</label>
+                                <input 
+                                    type="number" 
+                                    id="creditAmount" 
+                                    placeholder="Zadejte částku"
+                                    class="input-field w-full p-3 font-medium text-sm sm:text-base"
+                                    required
+                                    min="1"
+                                >
+                            </div>
+                            
+                            <div>
+                                <label class="block text-black mb-2 font-bold text-sm sm:text-base">📝 Poznámka (volitelné)</label>
+                                <input 
+                                    type="text" 
+                                    id="creditDescription" 
+                                    placeholder="Např. 'Dobití hotovostí'"
+                                    class="input-field w-full p-3 font-medium text-sm sm:text-base"
+                                >
+                            </div>
+                            
+                            <button 
+                                type="submit" 
+                                class="btn-primary w-full p-3 text-sm sm:text-base min-h-[44px] touch-manipulation"
+                            >
+                                💳 Dobít kredit
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <div class="card p-3 sm:p-6">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 sm:mb-4 gap-2 sm:gap-0">
+                            <h2 class="text-base sm:text-xl title-text">📈 Historie transakcí</h2>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <button id="sendMonthlyReportBtn" class="btn-primary px-3 sm:px-4 py-2 text-xs sm:text-sm min-h-[44px] touch-manipulation">
+                                    📊 Otestovat měsíční report
+                                </button>
+                                <button id="clearHistoryBtn" class="btn-danger px-3 sm:px-4 py-2 text-xs sm:text-sm min-h-[44px] touch-manipulation">
+                                    🗑️ Smazat historii transakcí
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs sm:text-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="text-left p-2">📅 Datum</th>
+                                        <th class="text-left p-2 hidden sm:table-cell">👤 Uživatel</th>
+                                        <th class="text-left p-2">📋 Typ</th>
+                                        <th class="text-right p-2">💰 Částka</th>
+                                        <th class="text-left p-2 hidden lg:table-cell">📝 Popis</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="allTransactionsList">
+                                    <tr><td colspan="5" class="text-center p-3 font-medium">Načítání transakcí...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add/Edit User Modal -->
+    <div id="userModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+        <div class="card p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h2 id="userModalTitle" class="text-lg sm:text-xl title-text mb-3 sm:mb-4">👤 Přidat uživatele</h2>
+            <form id="userForm">
+                <input type="hidden" id="editUserId" value="">
+                <input 
+                    type="text" 
+                    id="userRfidCard" 
+                    placeholder="🔖 RFID karta (např. 1234567890)"
+                    class="input-field w-full p-3 mb-3 font-medium text-sm sm:text-base"
+                    required
+                >
+                <input 
+                    type="text" 
+                    id="userNfcCard" 
+                    placeholder="📱 NFC karta (např. 6a:5b:3e:9c)"
+                    class="input-field w-full p-3 mb-3 font-medium text-sm sm:text-base"
+                >
+                <input 
+                    type="text" 
+                    id="userName" 
+                    placeholder="👤 Jméno uživatele"
+                    class="input-field w-full p-3 mb-3 font-medium text-sm sm:text-base"
+                    required
+                >
+                <input 
+                    type="number" 
+                    id="userBalance" 
+                    placeholder="💰 Počáteční kredit (Kč)"
+                    class="input-field w-full p-3 mb-4 font-medium text-sm sm:text-base"
+                    required
+                >
+                <div class="flex flex-col sm:flex-row sm:justify-end gap-2">
+                    <button 
+                        type="button" 
+                        id="cancelUserBtn"
+                        class="btn-secondary px-4 py-3 text-sm sm:text-base min-h-[44px] touch-manipulation order-2 sm:order-1"
+                    >
+                        ❌ Zrušit
+                    </button>
+                    <button 
+                        type="submit" 
+                        id="saveUserBtn"
+                        class="btn-primary px-4 py-3 text-sm sm:text-base min-h-[44px] touch-manipulation order-1 sm:order-2"
+                    >
+                        ✅ Přidat uživatele
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+        <div class="card p-4 sm:p-6 max-w-md w-full">
+            <h2 class="text-lg sm:text-xl title-text mb-3 sm:mb-4">⚠️ Potvrzení smazání</h2>
+            <p id="deleteUserName" class="text-black mb-4 sm:mb-6 font-medium text-sm sm:text-base">Opravdu chcete smazat tohoto uživatele?</p>
+            <div class="flex flex-col sm:flex-row sm:justify-end gap-2">
+                <button 
+                    type="button" 
+                    id="cancelDeleteBtn"
+                    class="btn-secondary px-4 py-3 text-sm sm:text-base min-h-[44px] touch-manipulation order-2 sm:order-1"
+                >
+                    ❌ Zrušit
+                </button>
+                <button 
+                    type="button" 
+                    id="confirmDeleteBtn"
+                    class="btn-danger px-4 py-3 text-sm sm:text-base min-h-[44px] touch-manipulation order-1 sm:order-2"
+                >
+                    🗑️ Smazat
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Order Confirmation Modal -->
+    <div id="orderConfirmModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+        <div class="card p-4 sm:p-6 max-w-md w-full">
+            <h2 class="text-lg sm:text-xl title-text mb-3 sm:mb-4">☕ Potvrdit objednávku</h2>
+            <p id="orderDetails" class="text-black mb-4 sm:mb-6 font-medium text-sm sm:text-base">Chcete si objednat kávu <span id="orderProduct"></span> za <span id="orderPrice"></span> Kč?</p>
+            <div class="flex flex-col sm:flex-row sm:justify-end gap-2">
+                <button 
+                    type="button" 
+                    id="cancelOrderBtn"
+                    class="btn-secondary px-4 py-3 text-sm sm:text-base min-h-[44px] touch-manipulation order-2 sm:order-1"
+                >
+                    ❌ Zrušit
+                </button>
+                <button 
+                    type="button" 
+                    id="confirmOrderBtn"
+                    class="btn-primary px-4 py-3 text-sm sm:text-base min-h-[44px] touch-manipulation order-1 sm:order-2"
+                >
+                    ✅ Objednat
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- First Confirmation Modal for History Deletion -->
+    <div id="firstConfirmModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+        <div class="card p-4 sm:p-6 max-w-md w-full">
+            <h2 class="text-lg sm:text-xl title-text mb-3 sm:mb-4">⚠️ Potvrzení smazání historie</h2>
+            <p class="text-black mb-3 sm:mb-4 font-medium text-sm sm:text-base">Chcete smazat veškerou historii transakcí?</p>
+            <p class="text-black mb-4 sm:mb-6 font-medium text-sm sm:text-base">Pro pokračování přiložte admin kartu:</p>
+            <input 
+                type="text" 
+                id="firstConfirmAdminRfid" 
+                class="input-field w-full p-3 mb-4 font-mono font-bold text-sm sm:text-base"
+                placeholder="Přiložte admin kartu..."
+                autocomplete="off"
+            >
+            <div class="flex justify-end">
+                <button 
+                    type="button" 
+                    id="cancelFirstConfirmBtn" 
+                    class="btn-secondary px-4 py-3 text-sm sm:text-base min-h-[44px] touch-manipulation"
+                >
+                    ❌ Zrušit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Second Confirmation Modal for History Deletion -->
+    <div id="secondConfirmModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+        <div class="card p-4 sm:p-6 max-w-md w-full">
+            <h2 class="text-lg sm:text-xl title-text mb-3 sm:mb-4">⚠️ FINÁLNÍ POTVRZENÍ</h2>
+            <p class="text-black mb-3 sm:mb-4 font-medium text-sm sm:text-base">OPRAVDU chcete smazat VEŠKEROU historii transakcí?</p>
+            <p class="text-black mb-3 sm:mb-4 font-medium text-sm sm:text-base">Tato akce je NEVRATNÁ!</p>
+            <p class="text-black mb-4 sm:mb-6 font-medium text-sm sm:text-base">Pro definitivní potvrzení znovu přiložte admin kartu:</p>
+            <input 
+                type="text" 
+                id="secondConfirmAdminRfid" 
+                class="input-field w-full p-3 mb-4 font-mono font-bold text-sm sm:text-base"
+                placeholder="Přiložte admin kartu pro finální potvrzení..."
+                autocomplete="off"
+            >
+            <div class="flex justify-end">
+                <button 
+                    type="button" 
+                    id="cancelSecondConfirmBtn" 
+                    class="btn-secondary px-4 py-3 text-sm sm:text-base min-h-[44px] touch-manipulation"
+                >
+                    ❌ Zrušit
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div id="toast" class="hidden fixed bottom-4 right-4 max-w-xs w-full card transition-opacity duration-300 opacity-0 z-50">
+        <div class="flex p-4 items-start">
+            <div id="toastIcon" class="mr-3 text-xl"></div>
+            <div class="flex-1">
+                <h3 id="toastTitle" class="font-bold"></h3>
+                <p id="toastMessage" class="text-sm font-medium" style="color: var(--gray);"></p>
+            </div>
+            <button id="closeToastBtn" class="text-gray-400 hover:text-gray-600 font-bold">
+                ❌
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Inicializace Supabase
+        const supabaseUrl = 'https://ejzvytylzhtxqvpgyyic.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqenZ5dHlsemh0eHF2cGd5eWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3NjY2NTksImV4cCI6MjA2NjM0MjY1OX0.r3KFR3ReWDg6izOvsUUJ5HrfegxSsfvjUIGmxqg6MVQ';
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        // Globální proměnné
+        let currentUser = null;
+        let userToDelete = null;
+        let currentOrder = null;
+        let adminMode = false;
+        
+        // Data českých svátků - mapování data na jméno
+        const czechNameDays = {
+            "1.1": "Nový rok",
+            "2.1": "Karina",
+            "3.1": "Radmila",
+            "4.1": "Diana",
+            "5.1": "Dalimil",
+            "6.1": "Tři králové",
+            "7.1": "Vilma",
+            "8.1": "Čestmír",
+            "9.1": "Vladan",
+            "10.1": "Břetislav",
+            "11.1": "Bohdana",
+            "12.1": "Pravoslav",
+            "13.1": "Edita",
+            "14.1": "Radovan",
+            "15.1": "Alice",
+            "16.1": "Ctirad",
+            "17.1": "Drahoslav",
+            "18.1": "Vladislav",
+            "19.1": "Doubravka",
+            "20.1": "Ilona",
+            "21.1": "Běla",
+            "22.1": "Slavomír",
+            "23.1": "Zdeněk",
+            "24.1": "Milena",
+            "25.1": "Miloš",
+            "26.1": "Zora",
+            "27.1": "Ingrid",
+            "28.1": "Otýlie",
+            "29.1": "Zdislava",
+            "30.1": "Robin",
+            "31.1": "Marika",
+            "1.2": "Hynek",
+            "2.2": "Nela",
+            "3.2": "Blažej",
+            "4.2": "Jarmila",
+            "5.2": "Dobromila",
+            "6.2": "Vanda",
+            "7.2": "Veronika",
+            "8.2": "Milada",
+            "9.2": "Apolena",
+            "10.2": "Mojmír",
+            "11.2": "Božena",
+            "12.2": "Slavěna",
+            "13.2": "Věnceslav",
+            "14.2": "Valentýn",
+            "15.2": "Jiřina",
+            "16.2": "Ljuba",
+            "17.2": "Miloslava",
+            "18.2": "Gizela",
+            "19.2": "Patrik",
+            "20.2": "Oldřich",
+            "21.2": "Lenka",
+            "22.2": "Petr",
+            "23.2": "Svatopluk",
+            "24.2": "Matěj",
+            "25.2": "Liliana",
+            "26.2": "Dorota",
+            "27.2": "Alexandr",
+            "28.2": "Lumír",
+            "29.2": "Horymír",
+            "1.3": "Bedřich",
+            "2.3": "Anežka",
+            "3.3": "Kamil",
+            "4.3": "Stela",
+            "5.3": "Kazimír",
+            "6.3": "Miroslav",
+            "7.3": "Tomáš",
+            "8.3": "Gabriela",
+            "9.3": "Františka",
+            "10.3": "Viktorie",
+            "11.3": "Anděla",
+            "12.3": "Řehoř",
+            "13.3": "Růžena",
+            "14.3": "Rút",
+            "15.3": "Ida",
+            "16.3": "Elena",
+            "17.3": "Vlastimil",
+            "18.3": "Eduard",
+            "19.3": "Josef",
+            "20.3": "Světlana",
+            "21.3": "Radek",
+            "22.3": "Leona",
+            "23.3": "Ivona",
+            "24.3": "Gabriel",
+            "25.3": "Marián",
+            "26.3": "Emanuel",
+            "27.3": "Dita",
+            "28.3": "Soňa",
+            "29.3": "Taťána",
+            "30.3": "Arnošt",
+            "31.3": "Kvido",
+            "1.4": "Hugo",
+            "2.4": "Erika",
+            "3.4": "Richard",
+            "4.4": "Ivana",
+            "5.4": "Miroslava",
+            "6.4": "Vendula",
+            "7.4": "Heřman",
+            "8.4": "Ema",
+            "9.4": "Dušan",
+            "10.4": "Darja",
+            "11.4": "Izabela",
+            "12.4": "Julius",
+            "13.4": "Aleš",
+            "14.4": "Vincent",
+            "15.4": "Anastázie",
+            "16.4": "Irena",
+            "17.4": "Rudolf",
+            "18.4": "Valérie",
+            "19.4": "Rostislav",
+            "20.4": "Marcela",
+            "21.4": "Alexandra",
+            "22.4": "Evženie",
+            "23.4": "Vojtěch",
+            "24.4": "Jiří",
+            "25.4": "Marek",
+            "26.4": "Oto",
+            "27.4": "Jaroslav",
+            "28.4": "Vlastislav",
+            "29.4": "Robert",
+            "30.4": "Blahoslav",
+            "1.5": "Svátek práce",
+            "2.5": "Zikmund",
+            "3.5": "Alexej",
+            "4.5": "Květoslav",
+            "5.5": "Klaudie",
+            "6.5": "Radoslav",
+            "7.5": "Stanislav",
+            "8.5": "Den osvobození",
+            "9.5": "Ctibor",
+            "10.5": "Blažena",
+            "11.5": "Svatava",
+            "12.5": "Pankrác",
+            "13.5": "Servác",
+            "14.5": "Bonifác",
+            "15.5": "Žofie",
+            "16.5": "Přemysl",
+            "17.5": "Aneta",
+            "18.5": "Nataša",
+            "19.5": "Ivo",
+            "20.5": "Zbyšek",
+            "21.5": "Monika",
+            "22.5": "Emil",
+            "23.5": "Vladimír",
+            "24.5": "Jana",
+            "25.5": "Viola",
+            "26.5": "Filip",
+            "27.5": "Valdemar",
+            "28.5": "Vilém",
+            "29.5": "Maxmilián",
+            "30.5": "Ferdinand",
+            "31.5": "Kamila",
+            "1.6": "Laura",
+            "2.6": "Jarmil",
+            "3.6": "Tamara",
+            "4.6": "Dalibor",
+            "5.6": "Dobroslav",
+            "6.6": "Norbert",
+            "7.6": "Iveta",
+            "8.6": "Medard",
+            "9.6": "Stanislava",
+            "10.6": "Gita",
+            "11.6": "Bruno",
+            "12.6": "Antonie",
+            "13.6": "Antonín",
+            "14.6": "Roland",
+            "15.6": "Vít",
+            "16.6": "Zbyněk",
+            "17.6": "Adolf",
+            "18.6": "Milan",
+            "19.6": "Leoš",
+            "20.6": "Květa",
+            "21.6": "Alois",
+            "22.6": "Pavla",
+            "23.6": "Zdeňka",
+            "24.6": "Jan",
+            "25.6": "Ivan",
+            "26.6": "Adriana",
+            "27.6": "Ladislav",
+            "28.6": "Lubomír",
+            "29.6": "Petr a Pavel",
+            "30.6": "Šárka",
+            "1.7": "Jaroslava",
+            "2.7": "Patricie",
+            "3.7": "Radomír",
+            "4.7": "Prokop",
+            "5.7": "Cyril a Metoděj",
+            "6.7": "Jan Hus",
+            "7.7": "Bohuslava",
+            "8.7": "Nora",
+            "9.7": "Drahoslava",
+            "10.7": "Libuše",
+            "11.7": "Olga",
+            "12.7": "Bořek",
+            "13.7": "Markéta",
+            "14.7": "Karolína",
+            "15.7": "Jindřich",
+            "16.7": "Luboš",
+            "17.7": "Martina",
+            "18.7": "Drahomíra",
+            "19.7": "Čeněk",
+            "20.7": "Ilja",
+            "21.7": "Vítězslav",
+            "22.7": "Magdaléna",
+            "23.7": "Libor",
+            "24.7": "Kristýna",
+            "25.7": "Jakub",
+            "26.7": "Anna",
+            "27.7": "Věroslav",
+            "28.7": "Viktor",
+            "29.7": "Marta",
+            "30.7": "Bořivoj",
+            "31.7": "Ignác",
+            "1.8": "Oskar",
+            "2.8": "Gustav",
+            "3.8": "Miluše",
+            "4.8": "Dominik",
+            "5.8": "Kristián",
+            "6.8": "Oldřiška",
+            "7.8": "Lada",
+            "8.8": "Soběslav",
+            "9.8": "Roman",
+            "10.8": "Vavřinec",
+            "11.8": "Zuzana",
+            "12.8": "Klára",
+            "13.8": "Alena",
+            "14.8": "Alan",
+            "15.8": "Hana",
+            "16.8": "Jáchym",
+            "17.8": "Petra",
+            "18.8": "Helena",
+            "19.8": "Ludvík",
+            "20.8": "Bernard",
+            "21.8": "Johana",
+            "22.8": "Bohuslav",
+            "23.8": "Sandra",
+            "24.8": "Bartoloměj",
+            "25.8": "Radim",
+            "26.8": "Luděk",
+            "27.8": "Otakar",
+            "28.8": "Augustýn",
+            "29.8": "Evelína",
+            "30.8": "Vladěna",
+            "31.8": "Pavlína",
+            "1.9": "Linda",
+            "2.9": "Adéla",
+            "3.9": "Bronislav",
+            "4.9": "Jindřiška",
+            "5.9": "Boris",
+            "6.9": "Boleslav",
+            "7.9": "Regína",
+            "8.9": "Mariana",
+            "9.9": "Daniela",
+            "10.9": "Irma",
+            "11.9": "Denisa",
+            "12.9": "Marie",
+            "13.9": "Lubor",
+            "14.9": "Radka",
+            "15.9": "Jolana",
+            "16.9": "Ludmila",
+            "17.9": "Naděžda",
+            "18.9": "Kryštof",
+            "19.9": "Zita",
+            "20.9": "Oleg",
+            "21.9": "Matouš",
+            "22.9": "Darina",
+            "23.9": "Berta",
+            "24.9": "Jaromír",
+            "25.9": "Zlata",
+            "26.9": "Andrea",
+            "27.9": "Jonáš",
+            "28.9": "Václav",
+            "29.9": "Michal",
+            "30.9": "Jeroným",
+            "1.10": "Igor",
+            "2.10": "Olívie",
+            "3.10": "Bohumil",
+            "4.10": "František",
+            "5.10": "Eliška",
+            "6.10": "Hanuš",
+            "7.10": "Justýna",
+            "8.10": "Věra",
+            "9.10": "Štefan",
+            "10.10": "Marina",
+            "11.10": "Andrej",
+            "12.10": "Marcel",
+            "13.10": "Renáta",
+            "14.10": "Agáta",
+            "15.10": "Tereza",
+            "16.10": "Havel",
+            "17.10": "Hedvika",
+            "18.10": "Lukáš",
+            "19.10": "Michaela",
+            "20.10": "Vendelín",
+            "21.10": "Brigita",
+            "22.10": "Sabina",
+            "23.10": "Teodor",
+            "24.10": "Nina",
+            "25.10": "Beáta",
+            "26.10": "Erik",
+            "27.10": "Šarlota",
+            "28.10": "Den vzniku ČSR",
+            "29.10": "Silvie",
+            "30.10": "Tadeáš",
+            "31.10": "Štěpánka",
+            "1.11": "Felix",
+            "2.11": "Památka zesnulých",
+            "3.11": "Hubert",
+            "4.11": "Karel",
+            "5.11": "Miriam",
+            "6.11": "Liběna",
+            "7.11": "Saskie",
+            "8.11": "Bohumír",
+            "9.11": "Bohdan",
+            "10.11": "Evžen",
+            "11.11": "Martin",
+            "12.11": "Benedikt",
+            "13.11": "Tibor",
+            "14.11": "Sáva",
+            "15.11": "Leopold",
+            "16.11": "Otmar",
+            "17.11": "Den boje za svobodu",
+            "18.11": "Romana",
+            "19.11": "Alžběta",
+            "20.11": "Nikola",
+            "21.11": "Albert",
+            "22.11": "Cecílie",
+            "23.11": "Klement",
+            "24.11": "Emílie",
+            "25.11": "Kateřina",
+            "26.11": "Artur",
+            "27.11": "Xenie",
+            "28.11": "René",
+            "29.11": "Zina",
+            "30.11": "Ondřej",
+            "1.12": "Iva",
+            "2.12": "Blanka",
+            "3.12": "Svatoslav",
+            "4.12": "Barbora",
+            "5.12": "Jitka",
+            "6.12": "Mikuláš",
+            "7.12": "Ambrož",
+            "8.12": "Květoslava",
+            "9.12": "Vratislav",
+            "10.12": "Julie",
+            "11.12": "Dana",
+            "12.12": "Simona",
+            "13.12": "Lucie",
+            "14.12": "Lýdie",
+            "15.12": "Radana",
+            "16.12": "Albína",
+            "17.12": "Daniel",
+            "18.12": "Miloslav",
+            "19.12": "Ester",
+            "20.12": "Dagmar",
+            "21.12": "Natálie",
+            "22.12": "Šimon",
+            "23.12": "Vlasta",
+            "24.12": "Adam a Eva",
+            "25.12": "1. svátek vánoční",
+            "26.12": "Štěpán",
+            "27.12": "Žaneta",
+            "28.12": "Bohumila",
+            "29.12": "Judita",
+            "30.12": "David",
+            "31.12": "Silvestr"
+        };
+        
+        // Admin RFID karta - více možných formátů
+        const ADMIN_RFID = '0046584111';    // Plná hodnota s nulou
+        const ADMIN_RFID_ALT = '46584111';  // Bez počáteční nuly
+        const ADMIN_RFID_PREFIX = '0046584'; // Prefix pro identifikaci i při částečném zadání
+        
+        // ===== Funkce pro aktualizaci času, data a svátků =====
+        
+        // Funkce pro aktualizaci aktuálního času
+        function updateCurrentTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            
+            // Formát: HH:MM:SS
+            const timeString = `${hours}:${minutes}:${seconds}`;
+            
+            // Aktualizace času na stránce
+            const timeElement = document.getElementById('currentTime');
+            if (timeElement) {
+                timeElement.textContent = timeString;
+            }
+            
+            // Opakování každou sekundu
+            setTimeout(updateCurrentTime, 1000);
+        }
+        
+        // Funkce pro aktualizaci aktuálního data a svátku
+        function updateDateAndNameDay() {
+            const now = new Date();
+            const day = now.getDate();
+            const month = now.getMonth() + 1; // Měsíce jsou indexovány od 0
+            const year = now.getFullYear();
+            
+            // Formát: D.M.YYYY
+            const dateString = `${day}.${month}.${year}`;
+            
+            // Aktualizace data na stránce
+            const dateElement = document.getElementById('currentDate');
+            if (dateElement) {
+                dateElement.textContent = dateString;
+            }
+            
+            // Zjištění, kdo má dnes svátek
+            const nameDayKey = `${day}.${month}`;
+            const nameDay = czechNameDays[nameDayKey] || "Neznámý svátek";
+            
+            // Aktualizace svátku na stránce
+            const nameDayElement = document.getElementById('nameDay');
+            if (nameDayElement) {
+                nameDayElement.textContent = `Svátek má: ${nameDay}`;
+            }
+        }
+        
+        // Funkce pro načtení a zobrazení stavu pokladny
+        async function updateCashRegisterStatus() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('cash_register')
+                    .select('amount')
+                    .order('last_updated', { ascending: false })
+                    .limit(1)
+                    .single();
+                
+                if (error) throw error;
+                
+                // Aktualizace stavu pokladny na stránce
+                const cashRegisterElement = document.getElementById('cashRegisterStatus');
+                if (cashRegisterElement && data) {
+                    cashRegisterElement.textContent = `${data.amount} Kč`;
+                }
+            } catch (error) {
+                console.error('Chyba při načítání stavu pokladny:', error);
+                const cashRegisterElement = document.getElementById('cashRegisterStatus');
+                if (cashRegisterElement) {
+                    cashRegisterElement.textContent = "Chyba načítání";
+                }
+            }
+        }
+        
+        // Event Listeners při načtení dokumentu
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializace UI
+            setTimeout(() => {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('loginScreen').classList.add('fade-in');
+                document.getElementById('rfidInput').focus();
+                
+                // Spuštění aktualizace času, data a svátku
+                updateCurrentTime();
+                updateDateAndNameDay();
+                updateCashRegisterStatus();
+                startCashRegisterUpdates();
+                
+                // Spuštění plánovače pro měsíční reporty
+                scheduleMonthlyReportCheck();
+                console.log('Plánovač měsíčních reportů spuštěn');
+            }, 1000);
+            
+            // RFID Input Handler
+            document.getElementById('rfidInput').addEventListener('input', handleRfidInput);
+            
+            // NFC Login Button
+            document.getElementById('nfcLoginBtn').addEventListener('click', startNFCLogin);
+            
+            // Biometric Login Button
+            document.getElementById('biometricLoginBtn').addEventListener('click', startBiometricLogin);
+            
+            // Přidání event listenerů pro měsíční reporty
+            document.getElementById('sendMonthlyReportBtn').addEventListener('click', () => {
+                console.log('Testování odeslání měsíčních reportů');
+                // Volání funkce v testovacím režimu (true)
+                sendMonthlyReportsToAllUsers(true);
+            });
+            
+            // Přidání event listenerů pro mazání historie transakcí
+            document.getElementById('clearHistoryBtn').addEventListener('click', showFirstConfirmModal);
+            document.getElementById('cancelFirstConfirmBtn').addEventListener('click', hideFirstConfirmModal);
+            document.getElementById('cancelSecondConfirmBtn').addEventListener('click', hideSecondConfirmModal);
+            document.getElementById('firstConfirmAdminRfid').addEventListener('input', handleFirstConfirmRfid);
+            document.getElementById('secondConfirmAdminRfid').addEventListener('input', handleSecondConfirmRfid);
+            
+            // Admin RFID Input Handler - s lepší podporou pro postupné zadávání
+            const adminInput = document.getElementById('adminRfidInput');
+            if (adminInput) {
+                // Kumulativní proměnná pro postupné zadávání znaků
+                let adminInputBuffer = '';
+                
+                // Místo input události, která může při rychlém zadávání nefungovat správně,
+                // použijeme keydown, která zachytí každou klávesu
+                adminInput.addEventListener('keydown', (event) => {
+                    // Logujeme každou klávesu pro diagnostiku
+                    console.log('Admin input keydown:', event.key, event.keyCode);
+                    
+                    // Ignorujeme speciální klávesy
+                    if (event.key.length === 1) {
+                        // Přidáme znak do bufferu
+                        adminInputBuffer += event.key;
+                        console.log('Admin input buffer:', adminInputBuffer);
+                        
+                        // Kontrola, zda buffer obsahuje admin kartu
+                        if (adminInputBuffer.includes('0046584111') || 
+                            adminInputBuffer.includes('46584111')) {
+                            console.log('*** ADMIN RFID KARTA DETEKOVÁNA V BUFFERU ***');
+                            // Nastavíme admin mód
+                            adminMode = true;
+                            // Skryjeme admin dialog
+                            document.getElementById('adminRfidPrompt').classList.add('hidden');
+                            // Vyčistíme vstupní pole a buffer
+                            document.getElementById('adminRfidInput').value = '';
+                            adminInputBuffer = '';
+                            // Zobrazíme admin panel
+                            document.getElementById('loginScreen').classList.add('hidden');
+                            document.getElementById('adminPanel').classList.remove('hidden');
+                            document.getElementById('adminPanel').classList.add('fade-in');
+                            // Načteme admin data
+                            loadUsers();
+                            loadAllTransactions();
+                            loadCashRegisterAmount(); // Načtení stavu pokladny
+                            // Zobrazíme potvrzovací zprávu
+                            showToast('✅', 'Admin přístup', 'Přihlášení do admin sekce úspěšné', 'success');
+                        }
+                    }
+                });
+                
+                // Zachováme původní input handler pro kompatibilitu
+                adminInput.addEventListener('input', handleAdminRfidInput);
+            } else {
+                console.error('Element adminRfidInput nenalezen při inicializaci!');
+            }
+            
+            // Admin Login
+            const adminLoginBtn = document.getElementById('adminLoginBtn');
+            if (adminLoginBtn) {
+                adminLoginBtn.addEventListener('click', (event) => {
+                    event.preventDefault(); // Zabráníme výchozímu chování
+                    console.log('Kliknuto na Admin přístup');
+                    showAdminRfidPrompt();
+                });
+            } else {
+                console.error('Element adminLoginBtn nenalezen!');
+            }
+            
+            const cancelAdminBtn = document.getElementById('cancelAdminBtn');
+            if (cancelAdminBtn) {
+                cancelAdminBtn.addEventListener('click', (event) => {
+                    event.preventDefault(); // Zabráníme výchozímu chování
+                    console.log('Kliknuto na Zrušit v admin promptu');
+                    hideAdminRfidPrompt();
+                });
+            } else {
+                console.error('Element cancelAdminBtn nenalezen!');
+            }
+            
+            // Tlačítko pro manuální zadání admin karty
+            const manualAdminBtn = document.getElementById('manualAdminBtn');
+            if (manualAdminBtn) {
+                manualAdminBtn.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    console.log('Kliknuto na Zadat ručně');
+                    // Přímo vložíme admin kartu do inputu
+                    const adminInput = document.getElementById('adminRfidInput');
+                    if (adminInput) {
+                        adminInput.value = ADMIN_RFID;
+                        // Simulujeme událost input, aby se aktivoval handler
+                        const inputEvent = new Event('input', { bubbles: true });
+                        adminInput.dispatchEvent(inputEvent);
+                    }
+                });
+            } else {
+                console.error('Element manualAdminBtn nenalezen!');
+            }
+            
+            // Odhlášení
+            document.getElementById('userLogoutBtn').addEventListener('click', handleLogout);
+            document.getElementById('adminLogoutBtn').addEventListener('click', handleLogout);
+            
+            // User Management
+            document.getElementById('addUserBtn').addEventListener('click', showAddUserModal);
+            document.getElementById('cancelUserBtn').addEventListener('click', hideUserModal);
+            document.getElementById('userForm').addEventListener('submit', handleSaveUser);
+            
+            // Credit Management
+            document.getElementById('creditForm').addEventListener('submit', handleAddCredit);
+            
+            // Delete User
+            document.getElementById('cancelDeleteBtn').addEventListener('click', hideDeleteModal);
+            document.getElementById('confirmDeleteBtn').addEventListener('click', handleConfirmDelete);
+            
+            // Order Management
+            document.getElementById('cancelOrderBtn').addEventListener('click', hideOrderModal);
+            document.getElementById('confirmOrderBtn').addEventListener('click', handleConfirmOrder);
+            
+            // Zavřít toast
+            document.getElementById('closeToastBtn').addEventListener('click', () => {
+                document.getElementById('toast').classList.add('hidden');
+            });
+            
+            // Přidání event listenerů pro tlačítka objednávek
+            document.querySelectorAll('.coffee-button').forEach(button => {
+                button.addEventListener('click', handleOrderClick);
+            });
+            
+            // Obsluha formuláře pokladny
+            document.getElementById('cashRegisterForm').addEventListener('submit', handleCashRegisterUpdate);
+        });
+        
+        // ===== RFID a Přihlašování =====
+        
+        // Zpracování vstupu z RFID čtečky
+        function handleRfidInput(event) {
+            const rfidValue = event.target.value;
+            
+            // Pokud je délka RFID karty alespoň 10 znaků, zkusíme přihlásit uživatele
+            if (rfidValue.length >= 10) {
+                handleCardLogin(rfidValue, 'RFID');
+            }
+        }
+        
+        // Zpracování admin RFID vstupu - zcela přepracováno s podporou pro postupné zadávání
+        function handleAdminRfidInput(event) {
+            const rfidValue = event.target.value.trim();
+            
+            // Podrobné logování pro diagnostiku
+            console.log('Admin RFID input:', rfidValue);
+            console.log('Admin RFID očekáváno:', ADMIN_RFID, 'nebo', ADMIN_RFID_ALT);
+            console.log('Délka vstupu:', rfidValue.length);
+            
+            // NOVÁ IMPLEMENTACE:
+            // Detekce admin karty - kontrolujeme, zda zadaná hodnota OBSAHUJE kompletní nebo část očekávané hodnoty
+            // "0046584" je 7 znaků, což je dostatek k bezpečné identifikaci
+            if (rfidValue.length >= 7) {
+                // Kontrola, zda vstup obsahuje klíčovou část admin karty nebo celou hodnotu
+                // Toto řeší problém postupného zadávání znaků
+                if (rfidValue.startsWith(ADMIN_RFID_PREFIX) || 
+                    rfidValue.includes('0046584111') || 
+                    rfidValue.includes('46584111') || 
+                    ADMIN_RFID.startsWith(rfidValue)) {
+                    console.log('*** ADMIN RFID KARTA ÚSPĚŠNĚ OVĚŘENA ***');
+                    // Nastavíme admin mód
+                    adminMode = true;
+                    // Skryjeme admin dialog
+                    document.getElementById('adminRfidPrompt').classList.add('hidden');
+                    // Vyčistíme vstupní pole
+                    document.getElementById('adminRfidInput').value = '';
+                    // Zobrazíme admin panel
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('adminPanel').classList.remove('hidden');
+                    document.getElementById('adminPanel').classList.add('fade-in');
+                    // Načteme admin data
+                    loadUsers();
+                    loadAllTransactions();
+                    // Zobrazíme potvrzovací zprávu
+                    showToast('✅', 'Admin přístup', 'Přihlášení do admin sekce úspěšné', 'success');
+                    return;
+                }
+                
+                // Kontrola, zda jsme již zadali dostatek znaků pro částečné ověření,
+                // ale číslo stále nebylo rozpoznáno jako admin karta
+                if (rfidValue.length >= 10) {
+                    console.log('Nesprávná admin karta:', rfidValue);
+                    // Zobrazit chybu v admin promptu
+                    const adminError = document.getElementById('adminLoginError');
+                    if (adminError) {
+                        adminError.textContent = 'Nesprávná admin karta';
+                        adminError.classList.remove('hidden');
+                        
+                        setTimeout(() => {
+                            adminError.classList.add('hidden');
+                        }, 3000);
+                    } else {
+                        console.error('Element adminLoginError nenalezen!');
+                    }
+                    
+                    // Vyčistíme vstupní pole
+                    document.getElementById('adminRfidInput').value = '';
+                }
+            }
+        }
+        
+        // Zobrazení admin RFID promptu
+        function showAdminRfidPrompt() {
+            console.log('Zobrazuji admin RFID prompt');
+            const adminPrompt = document.getElementById('adminRfidPrompt');
+            if (adminPrompt) {
+                adminPrompt.classList.remove('hidden');
+                // Počkáme 100ms před zaměřením, aby se prvek stihl zobrazit
+                setTimeout(() => {
+                    const adminInput = document.getElementById('adminRfidInput');
+                    if (adminInput) {
+                        adminInput.value = ''; // Vyčistíme případnou předchozí hodnotu
+                        adminInput.focus();
+                        console.log('Admin input zaměřen');
+                    } else {
+                        console.error('Element adminRfidInput nenalezen!');
+                    }
+                }, 100);
+            } else {
+                console.error('Element adminRfidPrompt nenalezen!');
+            }
+        }
+        
+        // Skrytí admin RFID promptu
+        function hideAdminRfidPrompt() {
+            console.log('Skrývám admin RFID prompt');
+            const adminPrompt = document.getElementById('adminRfidPrompt');
+            if (adminPrompt) {
+                adminPrompt.classList.add('hidden');
+                const adminInput = document.getElementById('adminRfidInput');
+                if (adminInput) {
+                    adminInput.value = '';
+                }
+            } else {
+                console.error('Element adminRfidPrompt nenalezen!');
+            }
+        }
+        
+        // Přihlášení uživatele pomocí RFID karty
+        async function loginWithRfid(rfidCard) {
+            rfidCard = rfidCard.trim();
+            console.log('RFID input:', rfidCard);
+            
+            // Kontrola minimální délky karty
+            if (rfidCard.length < 10) {
+                console.log('RFID karta je příliš krátká:', rfidCard.length);
+                showLoginError('Neplatná RFID karta - příliš krátká');
+                document.getElementById('rfidInput').value = '';
+                return;
+            }
+            
+            try {
+                // Odstraněno speciální zpracování admin karty - bude se přihlašovat jako běžný uživatel
+                
+                // Standardní zpracování pro ostatní karty - použijeme single(), který vrátí chybu,
+                // pokud karta neexistuje
+                const { data, error } = await supabaseClient
+                    .from('users')
+                    .select('*')
+                    .eq('rfid_card_id', rfidCard)
+                    .single();
+                
+                if (error) {
+                    // Rozlišení typu chyby
+                    if (error.code === 'PGRST116') {
+                        // Kód PGRST116 znamená "Nebyl nalezen žádný řádek"
+                        console.log('Karta není v databázi, přihlašování jako HOST');
+                        
+                        // Načtení HOST účtu
+                        const { data: hostData, error: hostError } = await supabaseClient
+                            .from('users')
+                            .select('*')
+                            .eq('name', 'HOST')
+                            .single();
+                        
+                        if (hostError) {
+                            console.error('Chyba při načítání HOST účtu:', hostError);
+                            showLoginError('Nepodařilo se přihlásit jako HOST');
+                            document.getElementById('rfidInput').value = '';
+                            return;
+                        }
+                        
+                        // Přidáme informaci o použité kartě (jen pro zobrazení v UI)
+                        hostData.guest_card = rfidCard;
+                        
+                        // Přihlásíme jako HOST
+                        currentUser = hostData;
+                        showUserDashboard(currentUser);
+                        
+                        // Zobrazíme informaci o přihlášení jako HOST
+                        showToast('ℹ️', 'Přihlášeno jako HOST', 'Používáte účet pro návštěvy', 'info');
+                        return;
+                    } else {
+                        // Jiný typ chyby - skutečná chyba databáze
+                        console.error('Databázová chyba:', error);
+                        showLoginError('Chyba při přihlašování');
+                        document.getElementById('rfidInput').value = '';
+                        return;
+                    }
+                }
+                
+                // Karta byla nalezena - standardní přihlášení
+                console.log('Nalezen uživatel:', data.name);
+                currentUser = data;
+                showUserDashboard(currentUser);
+                
+            } catch (error) {
+                console.error('Neočekávaná chyba při přihlašování:', error);
+                showLoginError('Nepodařilo se přihlásit');
+                document.getElementById('rfidInput').value = '';
+            }
+        }
+        
+        // Funkce pro pravidelnou aktualizaci stavu pokladny
+        function startCashRegisterUpdates() {
+            // Aktualizace každých 30 sekund
+            setInterval(updateCashRegisterStatus, 30000);
+        }
+        
+        // Zobrazení chybové zprávy při přihlašování
+        function showLoginError(message) {
+            const loginError = document.getElementById('loginError');
+            loginError.textContent = message;
+            loginError.classList.remove('hidden');
+            
+            setTimeout(() => {
+                loginError.classList.add('hidden');
+            }, 3000);
+        }
+        
+        // Odhlášení
+        function handleLogout() {
+            currentUser = null;
+            adminMode = false;
+            document.getElementById('userDashboard').classList.add('hidden');
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginScreen').classList.add('fade-in');
+            document.getElementById('rfidInput').value = '';
+            document.getElementById('rfidInput').focus();
+            
+            // Reset admin prompt
+            hideAdminRfidPrompt();
+            
+            showToast('✅', 'Odhlášeno', 'Byli jste úspěšně odhlášeni', 'success');
+        }
+        
+        // ===== Zobrazení UI =====
+        
+        // Zobrazení uživatelského dashboardu
+        function showUserDashboard(user) {
+            // Nastavení uživatelských dat
+            document.getElementById('userDashboardName').textContent = user.name;
+            
+            // Pokud se jedná o hosta s návštěvnickou kartou, zobrazíme číslo karty
+            if (user.name === 'HOST' && user.guest_card) {
+                document.getElementById('userDashboardCard').textContent = `Karta návštěvy: ${user.guest_card}`;
+            } else {
+                document.getElementById('userDashboardCard').textContent = `Karta: ${user.rfid_card_id}`;
+            }
+            
+            // Nastavení zůstatku
+            const balanceElement = document.getElementById('userDashboardBalance');
+            balanceElement.textContent = `${user.balance} Kč`;
+            balanceElement.className = user.balance >= 0 ? 'text-3xl font-bold balance-positive' : 'text-3xl font-bold balance-negative';
+            
+            // Zobrazení e-mailu, pokud je k dispozici
+            if (user.email) {
+                console.log('Uživatel má e-mail:', user.email);
+            }
+            
+            // Načtení transakcí uživatele
+            loadUserTransactions(user.id);
+            
+            // Zobrazení dashboardu
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('userDashboard').classList.remove('hidden');
+            document.getElementById('userDashboard').classList.add('fade-in');
+        }
+        
+        // Zobrazení admin panelu - už se nepoužívá, logika přesunuta přímo do handleAdminRfidInput
+        function showAdminPanel() {
+            console.log('Funkce showAdminPanel() je zastaralá, používá se přímo kód v handleAdminRfidInput()');
+            // Tato funkce je ponechána jen pro zpětnou kompatibilitu
+            // Skrýt login, zobrazit admin panel
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('adminPanel').classList.remove('hidden');
+            document.getElementById('adminPanel').classList.add('fade-in');
+            
+            // Reset admin prompt
+            hideAdminRfidPrompt();
+            
+            // Načíst data
+            loadUsers();
+            loadAllTransactions();
+            loadCashRegisterAmount(); // Načtení stavu pokladny
+        }
+        
+        // ===== Funkce pro měsíční reporty =====
+        
+        // Funkce pro získání statistik uživatele za zadané období
+        async function getUserStatsForPeriod(userId, startDate, endDate) {
+            try {
+                console.log(`Získávání statistik pro uživatele ${userId} od ${startDate} do ${endDate}`);
+                
+                // Formátování datumů pro SQL dotazy
+                const startDateStr = startDate.toISOString();
+                const endDateStr = endDate.toISOString();
+                
+                // Získání informací o uživateli
+                const { data: userData, error: userError } = await supabaseClient
+                    .from('users')
+                    .select('*')
+                    .eq('id', userId)
+                    .single();
+                
+                if (userError) throw userError;
+                if (!userData) {
+                    console.log(`Uživatel ${userId} nenalezen`);
+                    return null;
+                }
+                
+                console.log(`Nalezen uživatel: ${userData.name}`);
+                
+                // Počet vypitých káv a celková útrata
+                const { data: coffeeOrders, error: coffeeError } = await supabaseClient
+                    .from('transactions')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .eq('type', 'order')
+                    .gte('created_at', startDateStr)
+                    .lte('created_at', endDateStr);
+                
+                if (coffeeError) throw coffeeError;
+                
+                const coffeeCount = coffeeOrders ? coffeeOrders.length : 0;
+                const totalSpent = coffeeOrders ? coffeeOrders.reduce((sum, order) => sum + Number(order.amount), 0) : 0;
+                
+                console.log(`Počet káv: ${coffeeCount}, celková útrata: ${totalSpent} Kč`);
+                
+                // Počet dobití kreditu a celková částka
+                const { data: creditTransactions, error: creditError } = await supabaseClient
+                    .from('transactions')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .eq('type', 'credit')
+                    .gte('created_at', startDateStr)
+                    .lte('created_at', endDateStr);
+                
+                if (creditError) throw creditError;
+                
+                const creditCount = creditTransactions ? creditTransactions.length : 0;
+                const totalCredit = creditTransactions ? creditTransactions.reduce((sum, credit) => sum + Number(credit.amount), 0) : 0;
+                
+                console.log(`Počet dobití: ${creditCount}, celková částka: ${totalCredit} Kč`);
+                
+                // Získání první transakce v období pro zjištění počátečního zůstatku
+                const { data: firstTransaction, error: firstTransError } = await supabaseClient
+                    .from('transactions')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .gte('created_at', startDateStr)
+                    .order('created_at', { ascending: true })
+                    .limit(1);
+                
+                if (firstTransError) throw firstTransError;
+                
+                // Pokud nejsou žádné transakce v období, použijeme aktuální zůstatek jako výchozí
+                let startBalance = userData.balance;
+                
+                // Pokud jsou transakce, zjistíme počáteční zůstatek odečtením všech transakcí
+                if (firstTransaction && firstTransaction.length > 0) {
+                    // Získáme všechny transakce v období
+                    const { data: allTransactions, error: allTransError } = await supabaseClient
+                        .from('transactions')
+                        .select('*')
+                        .eq('user_id', userId)
+                        .gte('created_at', startDateStr)
+                        .lte('created_at', endDateStr)
+                        .order('created_at', { ascending: true });
+                    
+                    if (allTransError) throw allTransError;
+                    
+                    if (allTransactions && allTransactions.length > 0) {
+                        // Aktuální zůstatek uživatele
+                        const currentBalance = userData.balance;
+                        
+                        // Součet všech transakcí v období (negativní hodnoty pro útraty, pozitivní pro dobití)
+                        let balanceChange = 0;
+                        
+                        allTransactions.forEach(transaction => {
+                            if (transaction.type === 'order') {
+                                // Odečtení útraty (hodnota v databázi je kladná, pro změnu zůstatku potřebujeme zápornou)
+                                balanceChange -= Number(transaction.amount);
+                            } else if (transaction.type === 'credit') {
+                                // Přičtení dobití
+                                balanceChange += Number(transaction.amount);
+                            }
+                        });
+                        
+                        // Počáteční zůstatek = aktuální zůstatek - změny v období
+                        startBalance = currentBalance - balanceChange;
+                        console.log(`Aktuální zůstatek: ${currentBalance} Kč, změna: ${balanceChange} Kč, počáteční zůstatek: ${startBalance} Kč`);
+                    }
+                }
+                
+                // Vytvoření objektu s výsledky
+                return {
+                    user: userData,
+                    coffeeCount: coffeeCount,
+                    totalSpent: totalSpent,
+                    creditCount: creditCount,
+                    totalCredit: totalCredit,
+                    startBalance: startBalance,
+                    endBalance: userData.balance,
+                    periodStart: startDate,
+                    periodEnd: endDate
+                };
+                
+            } catch (error) {
+                console.error('Chyba při získávání statistik uživatele:', error);
+                return null;
+            }
+        }
+        
+        // Funkce pro odeslání měsíčního reportu e-mailem
+        async function sendMonthlyReportEmail(stats) {
+            try {
+                if (!stats || !stats.user || !stats.user.email) {
+                    console.warn('Nelze odeslat report: chybí data uživatele nebo e-mail');
+                    return false;
+                }
+                
+                // Formátování měsíce a roku - pro předchozí měsíc
+                const monthNames = ['LEDEN', 'ÚNOR', 'BŘEZEN', 'DUBEN', 'KVĚTEN', 'ČERVEN', 'ČERVENEC', 'SRPEN', 'ZÁŘÍ', 'ŘÍJEN', 'LISTOPAD', 'PROSINEC'];
+                // Použijeme měsíc z periodStart, protože to je začátek období (první den předchozího měsíce)
+                const monthYear = `${monthNames[stats.periodStart.getMonth()]} ${stats.periodStart.getFullYear()}`;
+                
+                // Získání e-mailu admina a kopie
+                const adminEmail = "jan.blazek@sfs.com";
+                const coffeeshopEmail = "cofeeshopsfs@gmail.com";
+                
+                console.log(`Odesílání měsíčního reportu uživateli ${stats.user.name} na e-mail ${stats.user.email}`);
+                
+                // Parametry pro EmailJS - použijeme šablonu template_ofplxbl pro měsíční report
+                // Formát musí odpovídat šabloně template_ofplxbl
+                const templateParams = {
+                    email: stats.user.email,                    // E-mail příjemce
+                    name: stats.user.name,                      // Jméno příjemce
+                    month: monthYear,                           // Název měsíce a roku (např. "ČERVEN 2025")
+                    coffee_count: stats.coffeeCount,            // Počet vypitých káv
+                    total_spent: stats.totalSpent,              // Celková útrata
+                    credit_topups: stats.creditCount,           // Počet dobití kreditu
+                    total_credit: stats.totalCredit,            // Celkem dobito
+                    start_balance: stats.startBalance.toFixed(2), // Zůstatek na začátku měsíce
+                    end_balance: stats.endBalance.toFixed(2),   // Aktuální zůstatek
+                    reply_to: coffeeshopEmail,                  // E-mail pro odpověď
+                    cc_email: adminEmail,                       // Kopie e-mailu pro admina
+                    from_name: "WEBCofee Automat",              // Jméno odesílatele
+                    from_email: coffeeshopEmail,                // E-mail odesílatele
+                    subject: 'Měsíční přehled' // Předmět e-mailu
+                };
+                
+                // Odesílání emailu přes EmailJS - použijeme šablonu template_ofplxbl pro měsíční report
+                const response = await emailjs.send(
+                    'service_p80izio',                          // Service ID
+                    'template_ofplxbl',                         // Správná šablona pro měsíční report
+                    templateParams
+                );
+                
+                console.log('Měsíční report úspěšně odeslán:', response);
+                return true;
+            } catch (error) {
+                console.error('Chyba při odesílání měsíčního reportu:', error);
+                return false;
+            }
+        }
+        
+        // Funkce pro odeslání reportů všem uživatelům
+        async function sendMonthlyReportsToAllUsers(testMode = false) {
+            try {
+                // Získání všech uživatelů s e-mailem
+                const { data: users, error } = await supabaseClient
+                    .from('users')
+                    .select('id, name, email')
+                    .not('email', 'is', null);
+                    
+                if (error) throw error;
+                
+                if (!users || users.length === 0) {
+                    console.log('Žádní uživatelé s e-mailem nenalezeni');
+                    showToast('⚠️', 'Upozornění', 'Nenalezeni žádní uživatelé s e-mailem', 'warning');
+                    return;
+                }
+                
+                // Stanovení období pro report
+                let startDate, endDate;
+                
+                if (testMode) {
+                    // V testovacím režimu použijeme posledních 30 dní
+                    endDate = new Date();
+                    startDate = new Date();
+                    startDate.setDate(startDate.getDate() - 30);
+                } else {
+                    // V produkčním režimu použijeme předchozí měsíc
+                    const today = new Date();
+                    endDate = new Date(today.getFullYear(), today.getMonth(), 0); // Poslední den předchozího měsíce
+                    startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1); // První den předchozího měsíce
+                }
+                
+                console.log(`Odesílání měsíčních reportů ${users.length} uživatelům za období ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`);
+                showToast('⏳', 'Zpracování', `Odesílání reportů ${users.length} uživatelům...`, 'info');
+                
+                // Počítadlo úspěšně odeslaných reportů
+                let successCount = 0;
+                
+                // Postupné odesílání reportů
+                for (const user of users) {
+                    // Získání statistik uživatele
+                    const stats = await getUserStatsForPeriod(user.id, startDate, endDate);
+                    
+                    if (stats) {
+                        // Odeslání reportu
+                        const success = await sendMonthlyReportEmail(stats);
+                        if (success) {
+                            successCount++;
+                            console.log(`Report úspěšně odeslán uživateli ${user.name}`);
+                        }
+                        
+                        // Krátká pauza mezi odesíláním e-mailů, aby nedošlo k rate limitingu
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                }
+                
+                // Zobrazení výsledku
+                if (successCount > 0) {
+                    showToast('✅', 'Úspěch', `Odesláno ${successCount} z ${users.length} reportů`, 'success');
+                } else {
+                    showToast('❌', 'Chyba', 'Nepodařilo se odeslat žádný report', 'error');
+                }
+                
+                console.log(`Odesílání reportů dokončeno. Úspěšně odesláno: ${successCount} z ${users.length}`);
+            } catch (error) {
+                console.error('Chyba při odesílání měsíčních reportů:', error);
+                showToast('❌', 'Chyba', 'Nastala chyba při odesílání reportů', 'error');
+            }
+        }
+
+        // Funkce pro kontrolu, zda je dnes první den v měsíci
+        function isFirstDayOfMonth() {
+            const today = new Date();
+            return today.getDate() === 1;
+        }
+        
+        // Funkce pro naplánování kontroly posledního dne v měsíci
+        function scheduleMonthlyReportCheck() {
+            const now = new Date();
+            // Plánujeme spuštění v 8:00 ráno
+            const scheduledTime = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate(),
+                8, 0, 0, 0 // 8:00:00 ráno
+            );
+            
+            // Pokud je nyní po 8:00, naplánujeme na zítra
+            if (now > scheduledTime) {
+                scheduledTime.setDate(scheduledTime.getDate() + 1);
+            }
+            
+            const timeUntilCheck = scheduledTime - now;
+            
+            setTimeout(() => {
+                // Kontrola, zda je první den v měsíci
+                if (isFirstDayOfMonth()) {
+                    console.log('Dnes je první den v měsíci, odesílám reporty za předchozí měsíc');
+                    sendMonthlyReportsToAllUsers(false); // false = produkční režim
+                }
+                
+                // Naplánování další kontroly
+                scheduleMonthlyReportCheck();
+            }, timeUntilCheck);
+            
+            console.log(`Další kontrola měsíčních reportů naplánována za ${Math.floor(timeUntilCheck / (1000 * 60 * 60))} hodin`);
+        }
+        
+        // ===== Funkce pro mazání historie transakcí =====
+        
+        // Funkce pro zobrazení prvního potvrzovacího okna
+        function showFirstConfirmModal() {
+            document.getElementById('firstConfirmModal').classList.remove('hidden');
+            document.getElementById('firstConfirmAdminRfid').value = '';
+            document.getElementById('firstConfirmAdminRfid').focus();
+        }
+        
+        // Funkce pro skrytí prvního potvrzovacího okna
+        function hideFirstConfirmModal() {
+            document.getElementById('firstConfirmModal').classList.add('hidden');
+        }
+        
+        // Funkce pro zpracování vstupu první admin karty
+        function handleFirstConfirmRfid(event) {
+            const rfidValue = event.target.value.trim();
+            
+            // Kontrola, zda jde o admin kartu
+            if (rfidValue === ADMIN_RFID || rfidValue === ADMIN_RFID_ALT) {
+                // Skryjeme první modální okno
+                hideFirstConfirmModal();
+                // Zobrazíme druhé modální okno
+                showSecondConfirmModal();
+            }
+        }
+        
+        // Funkce pro zobrazení druhého potvrzovacího okna
+        function showSecondConfirmModal() {
+            document.getElementById('secondConfirmModal').classList.remove('hidden');
+            document.getElementById('secondConfirmAdminRfid').value = '';
+            document.getElementById('secondConfirmAdminRfid').focus();
+        }
+        
+        // Funkce pro skrytí druhého potvrzovacího okna
+        function hideSecondConfirmModal() {
+            document.getElementById('secondConfirmModal').classList.add('hidden');
+        }
+        
+        // Funkce pro zpracování vstupu druhé admin karty
+        function handleSecondConfirmRfid(event) {
+            const rfidValue = event.target.value.trim();
+            
+            // Kontrola, zda jde o admin kartu
+            if (rfidValue === ADMIN_RFID || rfidValue === ADMIN_RFID_ALT) {
+                // Skryjeme druhé modální okno
+                hideSecondConfirmModal();
+                // Provedeme smazání historie
+                clearTransactionHistory();
+            }
+        }
+        
+        // Funkce pro smazání historie transakcí
+        async function clearTransactionHistory() {
+            try {
+                // Zobrazíme loading indikátor
+                showToast('⏳', 'Probíhá mazání', 'Mazání historie transakcí...', 'info');
+                
+                // Smazání všech transakcí
+                const { error: transactionsError } = await supabaseClient
+                    .from('transactions')
+                    .delete()
+                    .neq('id', '00000000-0000-0000-0000-000000000000'); // Trik pro smazání všech záznamů
+                    
+                if (transactionsError) throw transactionsError;
+                
+                // Aktualizace pokladny - zachováme aktuální stav, ale přidáme poznámku
+                const { data: currentCashRegister } = await supabaseClient
+                    .from('cash_register')
+                    .select('amount')
+                    .order('last_updated', { ascending: false })
+                    .limit(1)
+                    .single();
+                
+                // Vložení nového záznamu do cash_register s poznámkou o smazání historie
+                await supabaseClient
+                    .from('cash_register')
+                    .insert({
+                        amount: currentCashRegister ? currentCashRegister.amount : 0,
+                        note: 'Reset po smazání historie transakcí'
+                    });
+                
+                // Aktualizujeme seznam transakcí v UI
+                loadAllTransactions();
+                
+                // Zobrazíme potvrzení
+                showToast('✅', 'Hotovo', 'Historie transakcí byla úspěšně smazána', 'success');
+            } catch (error) {
+                console.error('Chyba při mazání historie:', error);
+                showToast('❌', 'Chyba', 'Nepodařilo se smazat historii transakcí', 'error');
+            }
+        }
+        
+        // ===== Funkce pro pokladnu =====
+        
+        // Načtení aktuálního stavu pokladny
+        async function loadCashRegisterAmount() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('cash_register')
+                    .select('*')
+                    .order('last_updated', { ascending: false })
+                    .limit(1)
+                    .single();
+                
+                if (error) throw error;
+                
+                if (data) {
+                    // Zobrazení aktuálního stavu pokladny
+                    const amountElement = document.getElementById('cashRegisterAmount');
+                    if (amountElement) {
+                        amountElement.innerHTML = `${data.amount} Kč`;
+                    }
+                    
+                    // Zobrazení času poslední aktualizace
+                    const lastUpdatedElement = document.getElementById('cashRegisterLastUpdated');
+                    if (lastUpdatedElement) {
+                        const date = new Date(data.last_updated);
+                        lastUpdatedElement.textContent = `${date.getDate()}.${date.getMonth()+1}.${date.getFullYear()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+                    }
+                    
+                    // Předvyplnění formuláře pro aktualizaci
+                    const newAmountInput = document.getElementById('cashRegisterNewAmount');
+                    if (newAmountInput) {
+                        newAmountInput.value = data.amount;
+                    }
+                } else {
+                    // Pokud není žádný záznam, zobrazíme 0
+                    const amountElement = document.getElementById('cashRegisterAmount');
+                    if (amountElement) {
+                        amountElement.innerHTML = `0 Kč`;
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Chyba při načítání stavu pokladny:', error);
+                
+                // Zobrazení chyby
+                const amountElement = document.getElementById('cashRegisterAmount');
+                if (amountElement) {
+                    amountElement.innerHTML = `<span style="color: var(--red);">Chyba načítání</span>`;
+                }
+                
+                showToast('❌', 'Chyba', 'Nepodařilo se načíst stav pokladny', 'error');
+            }
+        }
+        
+        // Zpracování formuláře pro aktualizaci stavu pokladny
+        async function handleCashRegisterUpdate(event) {
+            event.preventDefault();
+            
+            const newAmount = parseFloat(document.getElementById('cashRegisterNewAmount').value);
+            const note = document.getElementById('cashRegisterNote').value.trim() || 'Ruční aktualizace';
+            
+            if (isNaN(newAmount) || newAmount < 0) {
+                showToast('⚠️', 'Chyba', 'Zadejte platnou částku (0 nebo více)', 'warning');
+                return;
+            }
+            
+            try {
+                // Nejprve získáme aktuální stav pokladny
+                const { data: currentCashRegisterData, error: currentError } = await supabaseClient
+                    .from('cash_register')
+                    .select('amount')
+                    .order('last_updated', { ascending: false })
+                    .limit(1)
+                    .single();
+                
+                if (currentError) throw currentError;
+                
+                const currentAmount = parseFloat(currentCashRegisterData?.amount || 0);
+                const amountChange = newAmount - currentAmount;
+                
+                // Vložení nového záznamu do cash_register
+                const { error: registerError } = await supabaseClient
+                    .from('cash_register')
+                    .insert({
+                        amount: newAmount,
+                        note: note
+                    });
+                
+                if (registerError) throw registerError;
+                
+                // Vytvoření záznamu v tabulce transactions pro evidenci změny v pokladně
+                const transactionDescription = amountChange >= 0 
+                    ? `Navýšení pokladny o ${amountChange} Kč (${note})`
+                    : `Výběr z pokladny ${Math.abs(amountChange)} Kč (${note})`;
+                
+                const { error: transactionError } = await supabaseClient
+                    .from('transactions')
+                    .insert({
+                        user_id: null, // Nemá vazbu na konkrétního uživatele
+                        type: 'cash_register',
+                        amount: Math.abs(amountChange), // Ukládáme absolutní hodnotu změny
+                        description: transactionDescription
+                    });
+                
+                if (transactionError) throw transactionError;
+                
+                // Aktualizace zobrazeného stavu pokladny
+                loadCashRegisterAmount();
+                
+                // Aktualizace seznamu transakcí
+                loadAllTransactions();
+                
+                // Reset formuláře
+                document.getElementById('cashRegisterNote').value = '';
+                
+                showToast('✅', 'Úspěch', `Stav pokladny byl aktualizován na ${newAmount} Kč`, 'success');
+            } catch (error) {
+                console.error('Chyba při aktualizaci stavu pokladny:', error);
+                showToast('❌', 'Chyba', 'Nepodařilo se aktualizovat stav pokladny', 'error');
+            }
+        }
+        
+        // ===== Správa uživatelů =====
+        
+        // Načtení uživatelů ze Supabase
+        async function loadUsers() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('users')
+                    .select('*')
+                    .order('name');
+                
+                if (error) throw error;
+                
+                // Zobrazit uživatele
+                const userListEl = document.getElementById('userList');
+                userListEl.innerHTML = '';
+                
+                // Vyčistit select box pro dobíjení
+                const creditUserSelect = document.getElementById('creditUserId');
+                creditUserSelect.innerHTML = '<option value="">Vyberte uživatele...</option>';
+                
+                if (data && data.length > 0) {
+                    data.forEach(user => {
+                        const balanceColor = user.balance >= 0 ? 'balance-positive' : 'balance-negative';
+                        
+                        userListEl.innerHTML += `
+                            <div class="operational-block p-3 mb-2 rounded-lg" data-user-id="${user.id}">
+                                <div class="flex justify-between items-center">
+                                    <div class="flex-1">
+                                        <div class="font-bold">👤 ${user.name}</div>
+                                        <div class="text-sm font-medium" style="color: var(--gray);">🔖 RFID: ${user.rfid_card_id}</div>
+                                        ${user.nfc_card_id ? `<div class="text-sm font-medium" style="color: var(--gray);">📱 NFC: ${user.nfc_card_id}</div>` : ''}
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <div class="font-bold ${balanceColor}">💰 ${user.balance} Kč</div>
+                                        ${user.biometric_id ? '<span class="text-xs bg-blue-500 text-white px-2 py-1 rounded">👆 Bio</span>' : ''}
+                                        <div class="flex gap-1">
+                                            <button 
+                                                class="edit-user-btn btn-secondary px-2 py-1 text-xs"
+                                                data-id="${user.id}"
+                                                title="Upravit">
+                                                ✏️
+                                            </button>
+                                            ${!user.biometric_id ? 
+                                                `<button class="biometric-register-btn btn-primary px-2 py-1 text-xs" data-id="${user.id}" data-name="${user.name}" title="Registrovat biometrické ověření">👆</button>` : 
+                                                `<button class="biometric-remove-btn btn-secondary px-2 py-1 text-xs" data-id="${user.id}" title="Odebrat biometrické ověření">🗑️👆</button>`
+                                            }
+                                            <button 
+                                                class="delete-user-btn btn-danger px-2 py-1 text-xs"
+                                                data-id="${user.id}"
+                                                data-name="${user.name}"
+                                                title="Smazat">
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Přidat uživatele do select boxu pro dobíjení
+                        const option = document.createElement('option');
+                        option.value = user.id;
+                        option.textContent = user.name;
+                        creditUserSelect.appendChild(option);
+                    });
+                    
+                    // Přidat event listenery k tlačítkům
+                    document.querySelectorAll('.edit-user-btn').forEach(button => {
+                        button.addEventListener('click', () => handleEditUser(button.getAttribute('data-id')));
+                    });
+                    
+                    document.querySelectorAll('.delete-user-btn').forEach(button => {
+                        button.addEventListener('click', () => {
+                            showDeleteModal(
+                                button.getAttribute('data-id'),
+                                button.getAttribute('data-name')
+                            );
+                        });
+                    });
+                    
+                    // Event listenery pro biometrické ověření
+                    document.querySelectorAll('.biometric-register-btn').forEach(button => {
+                        button.addEventListener('click', () => {
+                            registerBiometric(
+                                button.getAttribute('data-id'),
+                                button.getAttribute('data-name')
+                            );
+                        });
+                    });
+                    
+                    document.querySelectorAll('.biometric-remove-btn').forEach(button => {
+                        button.addEventListener('click', () => {
+                            removeBiometric(button.getAttribute('data-id'));
+                        });
+                    });
+                } else {
+                    userListEl.innerHTML = '<p class="text-gray-500 p-3 font-medium">Žádní uživatelé</p>';
+                }
+            } catch (error) {
+                console.error('Chyba při načítání uživatelů:', error);
+                showToast('❌', 'Chyba', 'Nepodařilo se načíst uživatele', 'error');
+            }
+        }
+        
+        // Zobrazení modálního okna pro přidání uživatele
+        function showAddUserModal() {
+            // Nastavení titulku a tlačítka
+            document.getElementById('userModalTitle').textContent = '👤 Přidat uživatele';
+            document.getElementById('saveUserBtn').textContent = '✅ Přidat uživatele';
+            
+            // Vyčištění formuláře
+            document.getElementById('editUserId').value = '';
+            document.getElementById('userRfidCard').value = '';
+            document.getElementById('userNfcCard').value = '';
+            document.getElementById('userName').value = '';
+            document.getElementById('userBalance').value = '0';
+            
+            // Zobrazení modálu
+            document.getElementById('userModal').classList.remove('hidden');
+        }
+        
+        // Zobrazení modálního okna pro úpravu uživatele
+        async function handleEditUser(userId) {
+            try {
+                // Načtení dat uživatele
+                const { data, error } = await supabaseClient
+                    .from('users')
+                    .select('*')
+                    .eq('id', userId)
+                    .single();
+                
+                if (error) throw error;
+                
+                // Nastavení titulku a tlačítka
+                document.getElementById('userModalTitle').textContent = '✏️ Upravit uživatele';
+                document.getElementById('saveUserBtn').textContent = '💾 Uložit změny';
+                
+                // Vyplnění formuláře
+                document.getElementById('editUserId').value = data.id;
+                document.getElementById('userRfidCard').value = data.rfid_card_id || '';
+                document.getElementById('userNfcCard').value = data.nfc_card_id || '';
+                document.getElementById('userName').value = data.name;
+                document.getElementById('userBalance').value = data.balance;
+                
+                // Zobrazení modálu
+                document.getElementById('userModal').classList.remove('hidden');
+            } catch (error) {
+                console.error('Chyba při načítání uživatele:', error);
+                showToast('❌', 'Chyba', 'Nepodařilo se načíst uživatele', 'error');
+            }
+        }
+        
+        // Skrytí modálního okna pro přidání/úpravu uživatele
+        function hideUserModal() {
+            document.getElementById('userModal').classList.add('hidden');
+        }
+        
+        // Uložení uživatele (přidání nebo úprava)
+        async function handleSaveUser(event) {
+            event.preventDefault();
+            
+            const userId = document.getElementById('editUserId').value;
+            const rfidCard = document.getElementById('userRfidCard').value.trim();
+            const nfcCard = document.getElementById('userNfcCard').value.trim();
+            const name = document.getElementById('userName').value.trim();
+            const balance = parseFloat(document.getElementById('userBalance').value);
+            
+            if (!rfidCard || !name) {
+                showToast('⚠️', 'Chyba', 'Vyplňte všechna povinná pole', 'warning');
+                return;
+            }
+            
+            try {
+                let result;
+                
+                if (userId) {
+                    // Úprava existujícího uživatele
+                    result = await supabaseClient
+                        .from('users')
+                        .update({
+                            rfid_card_id: rfidCard,
+                            nfc_card_id: nfcCard || null,
+                            name: name,
+                            balance: balance,
+                            updated_at: new Date()
+                        })
+                        .eq('id', userId);
+                    
+                    if (result.error) throw result.error;
+                    showToast('✅', 'Úspěch', 'Uživatel byl úspěšně upraven', 'success');
+                } else {
+                    // Kontrola, zda RFID nebo NFC karta již existuje
+                    const { data: existingCard } = await supabaseClient
+                        .from('users')
+                        .select('id')
+                        .or(`rfid_card_id.eq.${rfidCard}${nfcCard ? `,nfc_card_id.eq.${nfcCard}` : ''}`)
+                        .single();
+                    
+                    if (existingCard) {
+                        showToast('⚠️', 'Chyba', 'RFID nebo NFC karta již existuje', 'warning');
+                        return;
+                    }
+                    
+                    // Přidání nového uživatele
+                    result = await supabaseClient
+                        .from('users')
+                        .insert({
+                            rfid_card_id: rfidCard,
+                            nfc_card_id: nfcCard || null,
+                            name: name,
+                            balance: balance
+                        });
+                    
+                    if (result.error) throw result.error;
+                    showToast('✅', 'Úspěch', 'Nový uživatel byl úspěšně přidán', 'success');
+                }
+                
+                // Skrytí modálu a načtení uživatelů
+                hideUserModal();
+                loadUsers();
+                
+            } catch (error) {
+                console.error('Chyba při ukládání uživatele:', error);
+                showToast('❌', 'Chyba', 'Nepodařilo se uložit uživatele', 'error');
+            }
+        }
+        
+        // Zobrazení modálního okna pro potvrzení smazání
+        function showDeleteModal(userId, userName) {
+            userToDelete = userId;
+            document.getElementById('deleteUserName').textContent = `Opravdu chcete smazat uživatele "${userName}"?`;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+        
+        // Skrytí modálního okna pro potvrzení smazání
+        function hideDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+            userToDelete = null;
+        }
+        
+        // Smazání uživatele
+        async function handleConfirmDelete() {
+            if (!userToDelete) return;
+            
+            try {
+                // Smazání uživatele
+                const { error } = await supabaseClient
+                    .from('users')
+                    .delete()
+                    .eq('id', userToDelete);
+                
+                if (error) throw error;
+                
+                showToast('✅', 'Úspěch', 'Uživatel byl úspěšně smazán', 'success');
+                hideDeleteModal();
+                loadUsers();
+            } catch (error) {
+                console.error('Chyba při mazání uživatele:', error);
+                showToast('❌', 'Chyba', 'Nepodařilo se smazat uživatele', 'error');
+            }
+        }
+        
+        // ===== Dobíjení kreditu =====
+        
+        // Dobití kreditu
+        async function handleAddCredit(event) {
+            event.preventDefault();
+            
+            const userId = document.getElementById('creditUserId').value;
+            const amount = parseFloat(document.getElementById('creditAmount').value);
+            const description = document.getElementById('creditDescription').value.trim() || 'Dobití kreditu';
+            
+            if (!userId || isNaN(amount) || amount <= 0) {
+                showToast('⚠️', 'Chyba', 'Vyplňte všechny povinné údaje', 'warning');
+                return;
+            }
+            
+            try {
+                // Zjištění aktuálního zůstatku uživatele
+                const { data: userData, error: userError } = await supabaseClient
+                    .from('users')
+                    .select('balance, name, email')
+                    .eq('id', userId)
+                    .single();
+                
+                if (userError) throw userError;
+                
+                const oldBalance = userData.balance;
+                
+                // Vytvoření transakce pro uživatele
+                const { error: transactionError } = await supabaseClient
+                    .from('transactions')
+                    .insert({
+                        user_id: userId,
+                        type: 'credit',
+                        amount: amount,
+                        description: description
+                    });
+                
+                if (transactionError) throw transactionError;
+                
+                // Načtení aktualizovaného zůstatku
+                const { data: updatedUser, error: updateError } = await supabaseClient
+                    .from('users')
+                    .select('balance, name, email')
+                    .eq('id', userId)
+                    .single();
+                
+                if (updateError) throw updateError;
+                
+                // Aktualizace stavu pokladny - zvýšení o částku dobití
+                try {
+                    // Nejprve načteme aktuální stav pokladny
+                    const { data: cashRegisterData, error: cashRegisterError } = await supabaseClient
+                        .from('cash_register')
+                        .select('amount')
+                        .order('last_updated', { ascending: false })
+                        .limit(1)
+                        .single();
+                    
+                    if (cashRegisterError) throw cashRegisterError;
+                    
+                    const currentAmount = parseFloat(cashRegisterData.amount) || 0;
+                    const newAmount = currentAmount + amount;
+                    const cashRegisterNote = `Automatická aktualizace - dobití kreditu uživatele ${updatedUser.name} o ${amount} Kč`;
+                    
+                    // Aktualizujeme stav pokladny
+                    const { error: updateCashRegisterError } = await supabaseClient
+                        .from('cash_register')
+                        .insert({
+                            amount: newAmount,
+                            note: cashRegisterNote
+                        });
+                    
+                    if (updateCashRegisterError) throw updateCashRegisterError;
+                    
+                    // Vytvoření záznamu v tabulce transactions pro evidenci změny v pokladně
+                    const { error: transactionError } = await supabaseClient
+                        .from('transactions')
+                        .insert({
+                            user_id: null, // Nemá vazbu na konkrétního uživatele
+                            type: 'cash_register',
+                            amount: amount, // Částka dobití
+                            description: `Navýšení pokladny o ${amount} Kč (dobití kreditu uživatele ${updatedUser.name})`
+                        });
+                    
+                    if (transactionError) throw transactionError;
+                    
+                    // Aktualizujeme zobrazený stav pokladny a seznam transakcí, pokud je zobrazen
+                    loadCashRegisterAmount();
+                    loadAllTransactions();
+                    
+                } catch (cashRegisterError) {
+                    console.error('Chyba při aktualizaci pokladny:', cashRegisterError);
+                    // Nezastavujeme proces dobíjení kvůli chybě pokladny, ale zobrazíme varování
+                    showToast('⚠️', 'Varování', 'Kredit byl dobit, ale stav pokladny se nepodařilo aktualizovat', 'warning');
+                }
+                
+                // Odeslání e-mailu o dobití kreditu
+                try {
+                    const emailSent = await sendCreditEmail(
+                        updatedUser,               // Data uživatele
+                        amount,                    // Částka dobití
+                        oldBalance,                // Původní zůstatek
+                        updatedUser.balance        // Nový zůstatek
+                    );
+                    
+                    if (emailSent) {
+                        console.log('E-mailová notifikace o dobití odeslána');
+                    } else {
+                        console.warn('E-mailovou notifikaci o dobití se nepodařilo odeslat');
+                    }
+                } catch (emailError) {
+                    console.error('Chyba při odesílání e-mailu o dobití:', emailError);
+                    // Nezastavujeme proces dobíjení kvůli chybě e-mailu
+                }
+                
+                // Reset formuláře
+                document.getElementById('creditAmount').value = '';
+                document.getElementById('creditDescription').value = '';
+                
+                // Aktualizace seznamu uživatelů a transakcí
+                loadUsers();
+                loadAllTransactions();
+                
+                showToast('✅', 'Úspěch', `Kredit byl úspěšně dobit o ${amount} Kč`, 'success');
+            } catch (error) {
+                console.error('Chyba při dobíjení kreditu:', error);
+                showToast('❌', 'Chyba', 'Nepodařilo se dobít kredit', 'error');
+            }
+        }
+        
+        // ===== Objednávky kávy =====
+        
+        // Kliknutí na tlačítko pro objednání kávy
+        function handleOrderClick(event) {
+            const button = event.currentTarget;
+            const product = button.getAttribute('data-product');
+            const price = parseInt(button.getAttribute('data-price'));
+            
+            if (!currentUser) {
+                showToast('⚠️', 'Chyba', 'Nejste přihlášeni', 'warning');
+                return;
+            }
+            
+            // Nastavení dat objednávky
+            currentOrder = {
+                product: product,
+                price: price
+            };
+            
+            // Uložení produktu do localStorage pro případ ztráty kontextu
+            localStorage.setItem('tempOrderProduct', product);
+            localStorage.setItem('tempOrderPrice', price.toString());
+            
+            console.log('Objednávka nastavena:', currentOrder);
+            
+            // Zobrazení modálu pro potvrzení objednávky
+            document.getElementById('orderProduct').textContent = product;
+            document.getElementById('orderPrice').textContent = price;
+            document.getElementById('orderConfirmModal').classList.remove('hidden');
+        }
+        
+        // Skrytí modálního okna pro potvrzení objednávky
+        function hideOrderModal() {
+            document.getElementById('orderConfirmModal').classList.add('hidden');
+            currentOrder = null;
+        }
+        
+        // Funkce pro odeslání e-mailu o objednávce
+        async function sendOrderEmail(user, product, price, oldBalance, newBalance) {
+            try {
+                // Kontrola, zda má uživatel e-mail
+                if (!user.email) {
+                    console.warn('Uživatel nemá e-mail, e-mail nebude odeslán');
+                    return false;
+                }
+                
+                // Kontrola, zda je produkt definován
+                if (!product) {
+                    console.warn('Produkt není definován, použijeme výchozí hodnotu "káva"');
+                    product = 'káva';
+                }
+                
+                // Získání e-mailu admina (Jan Blažek) a kopie pro coffeeshopsfs@gmail.com
+                const adminEmail = "jan.blazek@sfs.com";
+                const coffeeshopEmail = "cofeeshopsfs@gmail.com";
+                
+                console.log('Odesílání e-mailu o objednávce pomocí šablony template_fdm14kg:', {
+                    email: user.email,
+                    name: user.name,
+                    product: product,
+                    price: Math.abs(price),
+                    oldBalance: oldBalance,
+                    newBalance: newBalance,
+                    adminEmail: adminEmail,
+                    coffeeshopEmail: coffeeshopEmail
+                });
+                
+                // Příprava aktuálního data a času ve formátu DD.MM.YYYY HH:MM
+                const now = new Date();
+                const formattedDate = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()} ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+                
+                // Parametry pro EmailJS
+                const templateParams = {
+                    email: user.email,                    // E-mail příjemce
+                    name: user.name,                      // Jméno příjemce
+                    customer_name: user.name,             // Jméno zákazníka
+                    user_email: user.email,               // E-mail zákazníka
+                    coffee_name: product,                 // Název kávy
+                    price: Math.abs(price),               // Cena kávy (kladná hodnota)
+                    old_credit: oldBalance,               // Kredit před nákupem
+                    new_credit: newBalance,               // Kredit po nákupu
+                    date: formattedDate,                  // Aktuální datum a čas
+                    reply_to: coffeeshopEmail,            // E-mail pro odpověď - cofeeshopsfs@gmail.com
+                    cc_email: adminEmail,                 // Kopie e-mailu pro admina
+                    from_name: "WEBCofee Automat",        // Nový parametr - jméno odesílatele (místo Jan Blažek)
+                    from_email: coffeeshopEmail           // Nový parametr - e-mail odesílatele
+                };
+                
+                // Odeslání e-mailu s univerzální šablonou
+                // Přidáme parametr pro předmět e-mailu, aby bylo jasné, že jde o objednávku kávy
+                templateParams.subject = 'Odběr kávy';
+                templateParams.email_type = 'order'; // Pro identifikaci typu e-mailu v šabloně
+                
+                const response = await emailjs.send(
+                    'service_p80izio',                    // Service ID
+                    'template_fdm14kg',                   // Template ID - univerzální šablona
+                    templateParams
+                );
+                
+                console.log('E-mail úspěšně odeslán:', response);
+                return true;
+            } catch (error) {
+                console.error('Chyba při odesílání e-mailu:', error);
+                showToast('⚠️', 'Upozornění', 'E-mailovou notifikaci se nepodařilo odeslat, ale objednávka byla zpracována', 'warning');
+                return false;
+            }
+        }
+        
+        // Funkce pro odeslání e-mailu o dobití kreditu
+        async function sendCreditEmail(user, amount, oldBalance, newBalance) {
+            try {
+                // Kontrola, zda má uživatel e-mail
+                if (!user.email) {
+                    console.warn('Uživatel nemá e-mail, e-mail nebude odeslán');
+                    return false;
+                }
+                
+                // Získání e-mailu admina (Jan Blažek) a kopie pro coffeeshopsfs@gmail.com
+                const adminEmail = "jan.blazek@sfs.com";
+                const coffeeshopEmail = "cofeeshopsfs@gmail.com";
+                
+                console.log('Odesílání e-mailu o dobití pomocí šablony template_ofplxbl:', {
+                    email: user.email,
+                    name: user.name,
+                    amount: amount,
+                    oldBalance: oldBalance,
+                    newBalance: newBalance,
+                    adminEmail: adminEmail,
+                    coffeeshopEmail: coffeeshopEmail
+                });
+                
+                // Příprava aktuálního data a času ve formátu DD.MM.YYYY HH:MM
+                const now = new Date();
+                const formattedDate = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()} ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+                
+                // Parametry pro EmailJS
+                const templateParams = {
+                    email: user.email,                    // E-mail příjemce
+                    name: user.name,                      // Jméno příjemce
+                    customer_name: user.name,             // Jméno zákazníka
+                    user_email: user.email,               // E-mail zákazníka
+                    coffee_name: "Dobití kreditu",        // Název operace
+                    price: amount,                        // Částka dobití
+                    old_credit: oldBalance,               // Kredit před dobíjením
+                    new_credit: newBalance,               // Kredit po dobíjení
+                    date: formattedDate,                  // Aktuální datum a čas
+                    reply_to: coffeeshopEmail,            // E-mail pro odpověď - cofeeshopsfs@gmail.com
+                    cc_email: adminEmail,                 // Kopie e-mailu pro admina
+                    from_name: "WEBCofee Automat",        // Nový parametr - jméno odesílatele (místo Jan Blažek)
+                    from_email: coffeeshopEmail           // Nový parametr - e-mail odesílatele
+                };
+                
+                // Odeslání e-mailu s univerzální šablonou (používáme stejnou jako pro objednávku kávy)
+                // Přidáme parametr pro předmět e-mailu, aby bylo jasné, že jde o dobití kreditu
+                templateParams.subject = 'Navýšení kreditu';
+                templateParams.email_type = 'credit'; // Pro identifikaci typu e-mailu v šabloně
+                
+                const response = await emailjs.send(
+                    'service_p80izio',                    // Service ID
+                    'template_fdm14kg',                   // Template ID - univerzální šablona
+                    templateParams
+                );
+                
+                console.log('E-mail o dobití úspěšně odeslán:', response);
+                return true;
+            } catch (error) {
+                console.error('Chyba při odesílání e-mailu o dobití:', error);
+                showToast('⚠️', 'Upozornění', 'E-mailovou notifikaci o dobití se nepodařilo odeslat, ale kredit byl dobít', 'warning');
+                return false;
+            }
+        }
+        
+        // Potvrzení objednávky
+        async function handleConfirmOrder() {
+            // Obnovení dat objednávky z localStorage pro případ, že currentOrder byl ztracen
+            if (!currentOrder || !currentOrder.product) {
+                const savedProduct = localStorage.getItem('tempOrderProduct');
+                const savedPrice = localStorage.getItem('tempOrderPrice');
+                
+                if (savedProduct && savedPrice) {
+                    currentOrder = {
+                        product: savedProduct,
+                        price: parseInt(savedPrice)
+                    };
+                    console.log('Objednávka obnovena z localStorage:', currentOrder);
+                }
+            }
+            
+            if (!currentUser || !currentOrder) {
+                console.error('Nelze provést objednávku: chybí uživatel nebo data objednávky');
+                hideOrderModal();
+                return;
+            }
+            
+            // Pro jistotu zkontrolujeme, zda máme všechny potřebné údaje
+            if (!currentOrder.product) {
+                console.error('Chybí údaj o produktu v objednávce');
+                showToast('❌', 'Chyba', 'Neplatná objednávka, zkuste to znovu', 'error');
+                hideOrderModal();
+                return;
+            }
+            
+            try {
+                // OPRAVENO: Pro objednávku používáme KLADNOU částku (důležité!)
+                // Databázový trigger očekává kladnou hodnotu pro objednávky (type = 'order')
+                // a sám provádí odečet pomocí: balance = balance - amount
+                const price = Math.abs(currentOrder.price); // Zajistíme, že částka bude vždy kladná
+                const oldBalance = currentUser.balance; // Zapamatujeme si původní zůstatek
+                
+                // OPRAVENO: Definice productName PŘED jeho použitím v console.log
+                const orderProduct = currentOrder.product; // Uložíme si produkt pro pozdější použití
+                
+                console.log('Zpracování objednávky:', {
+                    product: orderProduct,
+                    price: price,
+                    oldBalance: oldBalance,
+                    userId: currentUser.id
+                });
+                
+                // Vytvoření transakce
+                const { error: transactionError } = await supabaseClient
+                    .from('transactions')
+                    .insert({
+                        user_id: currentUser.id,
+                        type: 'order',
+                        amount: price, // Kladná hodnota pro odečet z kreditu (trigger to odečte)
+                        description: `Objednávka: ${orderProduct}`
+                    });
+                
+                if (transactionError) throw transactionError;
+                
+                // Načtení aktuálního zůstatku a e-mailu z databáze po provedení transakce
+                const { data: userData, error: userError } = await supabaseClient
+                    .from('users')
+                    .select('balance, email, name')
+                    .eq('id', currentUser.id)
+                    .single();
+                
+                if (userError) throw userError;
+                
+                console.log('Původní zůstatek:', oldBalance, 'Nový zůstatek:', userData.balance);
+                
+                // Aktualizace UI
+                currentUser.balance = userData.balance; // Použijeme zůstatek přímo z databáze
+                currentUser.email = userData.email;     // Aktualizace e-mailu v currentUser
+                
+                const balanceElement = document.getElementById('userDashboardBalance');
+                balanceElement.textContent = `${userData.balance} Kč`;
+                balanceElement.className = userData.balance >= 0 ? 'text-3xl font-bold balance-positive' : 'text-3xl font-bold balance-negative';
+                
+                // Odeslání e-mailu o objednávce
+                try {
+                    console.log('Odesílání e-mailu s parametry:', {
+                        user: userData.name,
+                        email: userData.email,
+                        product: orderProduct,
+                        price: price,
+                        oldBalance: oldBalance,
+                        newBalance: userData.balance
+                    });
+                    
+                    const emailSent = await sendOrderEmail(
+                        userData,                  // Aktualizovaná data uživatele
+                        orderProduct,              // Název produktu (s kontrolou null)
+                        price,                     // Cena (nyní kladná hodnota)
+                        oldBalance,                // Původní zůstatek
+                        userData.balance           // Nový zůstatek
+                    );
+                    
+                    if (emailSent) {
+                        console.log('E-mailová notifikace odeslána');
+                    } else {
+                        console.warn('E-mailovou notifikaci se nepodařilo odeslat');
+                    }
+                } catch (emailError) {
+                    console.error('Chyba při odesílání e-mailu:', emailError);
+                    // Nezastavujeme proces objednávky kvůli chybě e-mailu
+                }
+                
+                // Načtení transakcí uživatele
+                loadUserTransactions(currentUser.id);
+                
+                // Čištění localStorage po dokončení objednávky
+                localStorage.removeItem('tempOrderProduct');
+                localStorage.removeItem('tempOrderPrice');
+                
+                hideOrderModal();
+                showToast('✅', 'Úspěch', `Objednávka ${orderProduct} byla úspěšně provedena`, 'success');
+            } catch (error) {
+                console.error('Chyba při zpracování objednávky:', error);
+                showToast('❌', 'Chyba', 'Nepodařilo se zpracovat objednávku', 'error');
+                hideOrderModal();
+            }
+        }
+        
+        // ===== Transakce =====
+        
+        // Načtení transakcí uživatele
+        async function loadUserTransactions(userId) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('transactions')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+                
+                if (error) throw error;
+                
+                const transListEl = document.getElementById('userTransactionsList');
+                transListEl.innerHTML = '';
+                
+                if (data && data.length > 0) {
+                    data.forEach(trans => {
+                        const date = new Date(trans.created_at);
+                        const formattedDate = `${date.getDate()}.${date.getMonth()+1}.${date.getFullYear()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+                        const isCredit = trans.type === 'credit';
+                        const color = isCredit ? 'transaction-credit' : 'transaction-debit';
+                        // Zobrazení částky - pro objednávky (type='order') zobrazujeme zápornou hodnotu
+                        const amount = isCredit ? `+${trans.amount}` : `-${Math.abs(trans.amount)}`;
+                        const icon = isCredit ? '💰' : '☕';
+                        
+                        transListEl.innerHTML += `
+                            <tr>
+                                <td class="font-medium p-2 sm:p-3">${formattedDate}</td>
+                                <td class="font-medium p-2 sm:p-3">${icon} ${isCredit ? 'Dobití' : 'Objednávka'}</td>
+                                <td class="${color} p-2 sm:p-3 text-right">${amount} Kč</td>
+                                <td class="font-medium p-2 sm:p-3 hidden sm:table-cell">${trans.description}</td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    transListEl.innerHTML = '<tr><td colspan="4" class="text-center p-3 font-medium">❌ Žádné transakce</td></tr>';
+                }
+            } catch (error) {
+                console.error('Chyba při načítání transakcí:', error);
+                document.getElementById('userTransactionsList').innerHTML = '<tr><td colspan="4" class="text-center p-3 font-medium" style="color: var(--red);">❌ Nepodařilo se načíst transakce</td></tr>';
+            }
+        }
+        
+        // Načtení všech transakcí pro admin panel
+        async function loadAllTransactions() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('transactions')
+                    .select('*, users(name)')
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+                
+                if (error) throw error;
+                
+                const transListEl = document.getElementById('allTransactionsList');
+                transListEl.innerHTML = '';
+                
+                if (data && data.length > 0) {
+                    data.forEach(trans => {
+                        const date = new Date(trans.created_at);
+                        const formattedDate = `${date.getDate()}.${date.getMonth()+1}.${date.getFullYear()} ${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+                        
+                        // Nastavení barvy, ikony a textu podle typu transakce
+                        let color, amount, icon, typeText, userName;
+                        
+                        if (trans.type === 'cash_register') {
+                            // Transakce pokladny
+                            if (trans.description.includes('Navýšení')) {
+                                color = 'transaction-credit';
+                                amount = `+${trans.amount} Kč`;
+                                icon = '💵';
+                            } else {
+                                color = 'transaction-debit';
+                                amount = `-${trans.amount} Kč`;
+                                icon = '💵';
+                            }
+                            typeText = 'Pokladna';
+                            userName = '💰 Pokladna';
+                        } else if (trans.type === 'credit') {
+                            // Dobití kreditu
+                            color = 'transaction-credit';
+                            amount = `+${trans.amount} Kč`;
+                            icon = '💰';
+                            typeText = 'Dobití';
+                            userName = `👤 ${trans.users?.name || 'Neznámý uživatel'}`;
+                        } else {
+                            // Objednávka kávy
+                            color = 'transaction-debit';
+                            amount = `-${Math.abs(trans.amount)} Kč`;
+                            icon = '☕';
+                            typeText = 'Objednávka';
+                            userName = `👤 ${trans.users?.name || 'Neznámý uživatel'}`;
+                        }
+                        
+                        transListEl.innerHTML += `
+                            <tr>
+                                <td class="font-medium p-2">${formattedDate}</td>
+                                <td class="font-medium p-2 hidden sm:table-cell">${userName}</td>
+                                <td class="font-medium p-2">${icon} ${typeText}</td>
+                                <td class="${color} p-2 text-right">${amount}</td>
+                                <td class="font-medium p-2 hidden lg:table-cell">${trans.description}</td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    transListEl.innerHTML = '<tr><td colspan="5" class="text-center p-3 font-medium">❌ Žádné transakce</td></tr>';
+                }
+            } catch (error) {
+                console.error('Chyba při načítání transakcí:', error);
+                document.getElementById('allTransactionsList').innerHTML = '<tr><td colspan="5" class="text-center p-3 font-medium" style="color: var(--red);">❌ Nepodařilo se načíst transakce</td></tr>';
+            }
+        }
+        
+        // ===== Pomocné funkce =====
+        
+        // Zobrazení toast notifikace
+        function showToast(icon, title, message, type) {
+            const toast = document.getElementById('toast');
+            const toastIcon = document.getElementById('toastIcon');
+            const toastTitle = document.getElementById('toastTitle');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            // Set icon and content
+            toastIcon.textContent = icon;
+            toastTitle.textContent = title;
+            toastMessage.textContent = message;
+            
+            // Set color based on type
+            if (type === 'error') {
+                toastIcon.style.color = 'var(--red)';
+                toastTitle.style.color = 'var(--red)';
+            } else if (type === 'success') {
+                toastIcon.style.color = 'var(--black)';
+                toastTitle.style.color = 'var(--black)';
+            } else if (type === 'warning') {
+                toastIcon.style.color = 'var(--gray)';
+                toastTitle.style.color = 'var(--gray)';
+            }
+            
+            // Show toast
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('opacity-100');
+            }, 10);
+            
+            // Auto hide after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                }, 300);
+            }, 3000);
+        }
+
+        // NFC Authentication Functions
+        let nfcReader = null;
+        
+        async function initNFC() {
+            try {
+                console.log('🔄 Inicializace NFC...');
+                
+                if (!('NDEFReader' in window)) {
+                    throw new Error('NDEFReader není podporován v tomto prohlížeči');
+                }
+                
+                console.log('✅ NDEFReader je dostupný');
+                nfcReader = new NDEFReader();
+                console.log('✅ NFC Reader vytvořen úspěšně');
+                
+                return true;
+            } catch (error) {
+                console.error('❌ Chyba při inicializaci NFC:', error);
+                return false;
+            }
+        }
+        
+        async function startNFCLogin() {
+            console.log('🔍 NFC Login: Začátek diagnostiky');
+            
+            // Detailní kontrola prostředí
+            console.log('🔍 User Agent:', navigator.userAgent);
+            console.log('🔍 Protocol:', window.location.protocol);
+            console.log('🔍 NDEFReader dostupný:', 'NDEFReader' in window);
+            
+            try {
+                // Kontrola HTTPS
+                if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+                    throw new Error('NFC vyžaduje HTTPS připojení');
+                }
+                
+                // Kontrola NFC API
+                if (!('NDEFReader' in window)) {
+                    throw new Error('NDEFReader není podporován v tomto prohlížeči. Potřebujete Chrome na Android.');
+                }
+                
+                console.log('✅ NFC API je dostupné');
+                
+                if (!nfcReader) {
+                    console.log('🔄 Inicializace NFC readeru...');
+                    const nfcInitialized = await initNFC();
+                    if (!nfcInitialized) {
+                        throw new Error('Nepodařilo se inicializovat NFC reader');
+                    }
+                }
+                
+                console.log('✅ NFC reader inicializován');
+                showToast('📱', 'NFC', 'Přiložte NFC kartu k zařízení...', 'info');
+                
+                console.log('🔄 Spouštím NFC scan...');
+                await nfcReader.scan();
+                console.log('✅ NFC scan spuštěn úspěšně');
+                
+                nfcReader.addEventListener('reading', async ({ message, serialNumber }) => {
+                    console.log('🎉 NFC karta detekována!');
+                    console.log('📱 Serial Number:', serialNumber);
+                    console.log('📋 Message:', message);
+                    
+                    // Použijeme serialNumber jako identifikátor karty
+                    const nfcCardId = serialNumber;
+                    
+                    if (!nfcCardId || nfcCardId.length < 4) {
+                        console.error('❌ Neplatné NFC ID:', nfcCardId);
+                        showToast('❌', 'NFC Error', 'Neplatné NFC ID karty', 'error');
+                        return;
+                    }
+                    
+                    // Pokusíme se přihlásit uživatele
+                    console.log('🔄 Přihlašování s NFC ID:', nfcCardId);
+                    await handleCardLogin(nfcCardId, 'NFC');
+                    
+                    // Zastavíme čtení NFC
+                    console.log('🛑 Zastavování NFC scan...');
+                    await nfcReader.stop();
+                });
+                
+                nfcReader.addEventListener('readingerror', (error) => {
+                    console.error('❌ Chyba při čtení NFC karty:', error);
+                    showToast('❌', 'NFC Error', 'Chyba při čtení NFC karty', 'error');
+                });
+                
+            } catch (error) {
+                console.error('❌ Chyba při spuštění NFC přihlášení:', error);
+                console.error('❌ Error name:', error.name);
+                console.error('❌ Error message:', error.message);
+                
+                let errorMessage = 'Neznámá chyba NFC';
+                
+                if (error.name === 'NotAllowedError') {
+                    errorMessage = 'NFC přístup byl odmítnut. Povolte NFC v nastavení prohlížeče a zkuste znovu.';
+                } else if (error.name === 'NotSupportedError') {
+                    errorMessage = 'NFC není podporováno na tomto zařízení nebo v tomto prohlížeči.';
+                } else if (error.message.includes('HTTPS')) {
+                    errorMessage = 'NFC vyžaduje zabezpečené HTTPS připojení.';
+                } else if (error.message.includes('NDEFReader')) {
+                    errorMessage = 'NFC není podporováno. Potřebujete Chrome na Android zařízení.';
+                } else {
+                    errorMessage = `NFC chyba: ${error.message}`;
+                }
+                
+                showToast('❌', 'NFC Error', errorMessage, 'error');
+                
+                // Zobrazení diagnostických informací
+                console.log('🔍 DIAGNOSTIKA NFC:');
+                console.log('- Prohlížeč:', navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Jiný prohlížeč');
+                console.log('- Android:', navigator.userAgent.includes('Android') ? 'Ano' : 'Ne');
+                console.log('- HTTPS:', window.location.protocol === 'https:' ? 'Ano' : 'Ne');
+                console.log('- NDEFReader:', 'NDEFReader' in window ? 'Dostupný' : 'Nedostupný');
+            }
+        }
+        
+        // Biometric Authentication Functions
+        async function startBiometricLogin() {
+            try {
+                if (!window.PublicKeyCredential) {
+                    throw new Error('WebAuthn není podporováno v tomto prohlížeči');
+                }
+                
+                // Kontrola dostupnosti biometrických autentifikátorů
+                const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+                if (!available) {
+                    throw new Error('Biometrické ověření není k dispozici na tomto zařízení');
+                }
+                
+                showToast('👆', 'Biometrické', 'Použijte biometrické ověření...', 'info');
+                
+                // Vytvoření challenge pro autentifikaci
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+                
+                const publicKeyCredentialRequestOptions = {
+                    challenge: challenge,
+                    allowCredentials: [], // Prázdný seznam umožní použití všech dostupných credentials na zařízení
+                    userVerification: 'required',
+                    timeout: 60000,
+                    rpId: window.location.hostname
+                };
+                
+                // Požádáme o biometrické ověření
+                const credential = await navigator.credentials.get({
+                    publicKey: publicKeyCredentialRequestOptions
+                });
+                
+                if (credential) {
+                    // Uspěšné biometrické ověření
+                    console.log('Biometrické ověření úspěšné:', credential.id);
+                    console.log('Credential raw ID:', credential.rawId);
+                    
+                    // Převedeme credential.id na base64url string pro porovnání s databází
+                    const credentialIdBase64 = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))
+                        .replace(/\+/g, '-')
+                        .replace(/\//g, '_')
+                        .replace(/=/g, '');
+                    
+                    console.log('Credential ID (base64url):', credentialIdBase64);
+                    
+                    // Pokusíme se najít uživatele podle biometrického ID
+                    await handleBiometricLogin(credentialIdBase64);
+                } else {
+                    throw new Error('Biometrické ověření selhalo');
+                }
+                
+            } catch (error) {
+                console.error('Chyba při biometrickém přihlášení:', error);
+                if (error.name === 'NotAllowedError') {
+                    showToast('❌', 'Biometric Error', 'Biometrické ověření bylo zrušeno nebo odmítnuto', 'error');
+                } else if (error.name === 'NotSupportedError') {
+                    showToast('❌', 'Biometric Error', 'Biometrické ověření není podporováno', 'error');
+                } else if (error.message.includes('k dispozici žádné přístupové klíče')) {
+                    showToast('❌', 'Biometric Error', 'Nejsou registrované žádné biometrické klíče na tomto zařízení pro tuto doménu', 'error');
+                } else {
+                    showToast('❌', 'Biometric Error', 'Chyba při biometrickém ověření: ' + error.message, 'error');
+                }
+            }
+        }
+        
+        // Registrace biometrické autentifikace pro uživatele
+        async function registerBiometric(userId, userName) {
+            try {
+                if (!window.PublicKeyCredential) {
+                    throw new Error('WebAuthn není podporováno v tomto prohlížeči');
+                }
+                
+                const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+                if (!available) {
+                    throw new Error('Biometrické ověření není k dispozici na tomto zařízení');
+                }
+                
+                showToast('👆', 'Biometrické', 'Registrace biometrického ověření...', 'info');
+                
+                // Vytvoření challenge pro registraci
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+                
+                // Vytvoření user ID z userId
+                const userIdBuffer = new TextEncoder().encode(userId);
+                
+                const publicKeyCredentialCreationOptions = {
+                    challenge: challenge,
+                    rp: {
+                        name: "WEBCofee",
+                        id: window.location.hostname,
+                    },
+                    user: {
+                        id: userIdBuffer,
+                        name: userName,
+                        displayName: userName,
+                    },
+                    pubKeyCredParams: [{alg: -7, type: "public-key"}],
+                    authenticatorSelection: {
+                        authenticatorAttachment: "platform",
+                        userVerification: "required"
+                    },
+                    timeout: 60000,
+                    attestation: "direct"
+                };
+                
+                const credential = await navigator.credentials.create({
+                    publicKey: publicKeyCredentialCreationOptions
+                });
+                
+                if (credential) {
+                    console.log('Biometrická registrace úspěšná:', credential.id);
+                    console.log('Credential raw ID:', credential.rawId);
+                    
+                    // Převedeme credential.id na base64url string pro konzistentní ukládání
+                    const credentialIdBase64 = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))
+                        .replace(/\+/g, '-')
+                        .replace(/\//g, '_')
+                        .replace(/=/g, '');
+                    
+                    console.log('Credential ID (base64url):', credentialIdBase64);
+                    
+                    // Uložíme credential ID do databáze pro daného uživatele
+                    const { error } = await supabaseClient
+                        .from('users')
+                        .update({ biometric_id: credentialIdBase64 })
+                        .eq('id', userId);
+                    
+                    if (error) throw error;
+                    
+                    showToast('✅', 'Úspěch', 'Biometrické ověření bylo úspěšně zaregistrováno', 'success');
+                    return credentialIdBase64;
+                } else {
+                    throw new Error('Registrace biometrického ověření selhala');
+                }
+                
+            } catch (error) {
+                console.error('Chyba při registraci biometrického ověření:', error);
+                showToast('❌', 'Biometric Error', 'Chyba při registraci: ' + error.message, 'error');
+                return null;
+            }
+        }
+        
+        // Zpracování biometrického přihlášení
+        async function handleBiometricLogin(biometricId) {
+            try {
+                // Hledáme uživatele podle biometric_id
+                const { data, error } = await supabaseClient
+                    .from('users')
+                    .select('*')
+                    .eq('biometric_id', biometricId)
+                    .single();
+                
+                if (error || !data) {
+                    // Biometrické ID není registrováno - nabídneme registraci
+                    showToast('⚠️', 'Neregistrováno', 'Biometrické ověření není zaregistrováno. Přihlaste se nejprve kartou.', 'warning');
+                    return;
+                }
+                
+                // Úspěšné přihlášení
+                currentUser = data;
+                showUserDashboard(currentUser);
+                showToast('✅', 'Přihlášeno', `Vítejte ${data.name}! (Biometrické ověření)`, 'success');
+                
+            } catch (error) {
+                console.error('Chyba při biometrickém přihlášení:', error);
+                showToast('❌', 'Chyba', 'Chyba při biometrickém přihlášení', 'error');
+            }
+        }
+        
+        // Rozšířená funkce pro zpracování přihlášení kartou (RFID/NFC)
+        async function handleCardLogin(cardId, cardType = 'RFID') {
+            // Kontrola minimální délky karty (jen pro RFID)
+            if (cardType === 'RFID' && cardId.length < 10) {
+                console.log('RFID karta je příliš krátká:', cardId.length);
+                showToast('❌', 'Neplatná karta', 'Neplatná RFID karta - příliš krátká', 'error');
+                
+                // Vyčištění input pole
+                const rfidInput = document.getElementById('rfidInput');
+                if (rfidInput) {
+                    rfidInput.value = '';
+                    rfidInput.focus();
+                }
+                return;
+            }
+            
+            try {
+                // Ověření RFID/NFC karty v databázi - kontrola obou sloupců
+                let data = null;
+                let error = null;
+                
+                // Nejdříve zkusíme najít podle typu karty
+                if (cardType === 'RFID') {
+                    // Pro RFID hledáme v rfid_card_id
+                    const result = await supabaseClient
+                        .from('users')
+                        .select('*')
+                        .eq('rfid_card_id', cardId)
+                        .single();
+                    data = result.data;
+                    error = result.error;
+                } else if (cardType === 'NFC') {
+                    // Pro NFC hledáme v nfc_card_id
+                    const result = await supabaseClient
+                        .from('users')
+                        .select('*')
+                        .eq('nfc_card_id', cardId)
+                        .single();
+                    data = result.data;
+                    error = result.error;
+                }
+                
+                // Pokud jsme uživatele nenašli podle typu, zkusíme hledat v obou sloupcích
+                if (!data && error && error.code === 'PGRST116') {
+                    console.log(`Uživatel nenalezen v ${cardType === 'RFID' ? 'rfid_card_id' : 'nfc_card_id'}, zkouším oba sloupce...`);
+                    
+                    const result = await supabaseClient
+                        .from('users')
+                        .select('*')
+                        .or(`rfid_card_id.eq.${cardId},nfc_card_id.eq.${cardId}`)
+                        .single();
+                    data = result.data;
+                    error = result.error;
+                }
+                
+                if (error && error.code !== 'PGRST116') {
+                    throw error;
+                }
+                
+                if (data) {
+                    // Uživatel nalezen - všichni uživatelé včetně admin karty se přihlásí do user dashboardu
+                    currentUser = data;
+                    showUserDashboard(currentUser);
+                    showToast('✅', 'Přihlášeno', `Vítejte ${data.name}! (${cardType})`, 'success');
+                } else {
+                    // Uživatel nenalezen - HOST přístup
+                    const hostUser = {
+                        id: 'host',
+                        name: 'HOST',
+                        rfid_card_id: cardId,
+                        balance: 0,
+                        email: 'host@sfs.com'
+                    };
+                    
+                    // Přidáme informaci o použité kartě (pro zobrazení v UI)
+                    hostUser.guest_card = cardId;
+                    
+                    // Přihlásíme jako HOST
+                    currentUser = hostUser;
+                    showUserDashboard(currentUser);
+                    showToast('👤', 'HOST přístup', `Přihlášen jako HOST (${cardType}) - Karta: ${cardId}`, 'info');
+                }
+                
+                // Vyčištění input pole
+                const rfidInput = document.getElementById('rfidInput');
+                if (rfidInput) {
+                    rfidInput.value = '';
+                    rfidInput.focus();
+                }
+                
+            } catch (error) {
+                console.error('Chyba při přihlášení kartou:', error);
+                showToast('❌', 'Chyba', 'Chyba při přihlášení', 'error');
+            }
+        }
+        
+        // Funkce pro odebrání biometrického ověření
+        async function removeBiometric(userId) {
+            try {
+                if (!confirm('Opravdu chcete odebrat biometrické ověření pro tohoto uživatele?')) {
+                    return;
+                }
+                
+                const { error } = await supabaseClient
+                    .from('users')
+                    .update({ biometric_id: null })
+                    .eq('id', userId);
+                
+                if (error) throw error;
+                
+                showToast('✅', 'Úspěch', 'Biometrické ověření bylo odebráno', 'success');
+                loadUsers(); // Aktualizovat seznam uživatelů
+                
+            } catch (error) {
+                console.error('Chyba při odebírání biometrického ověření:', error);
+                showToast('❌', 'Chyba', 'Chyba při odebírání biometrického ověření', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

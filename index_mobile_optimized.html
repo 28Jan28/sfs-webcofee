@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEBCofee - Kávovar systém</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- EmailJS integrace -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            // EmailJS inicializace s public key
+            emailjs.init("7hyRlSOcJZyjww9Ng"); // Správný veřejný klíč pro službu EmailJS
+        })();
+    </script>
+    <style>
+        :root {
+            --gray: #999999;
+            --red: #EB3C24;
+            --black: #000000;
+            --white: #FFFFFF;
+        }
+        
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        body {
+            background: url('https://public.youware.com/users-website-assets/prod/0f1254a1-1aa6-4aec-a97b-8bd81c837f2a/74a91e13e3f944929d8a3d46779fc836.jpg') no-repeat center center fixed;
+            background-size: cover;
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.7);
+            z-index: -1;
+        }
+        
+        .process-block {
+            background: linear-gradient(135deg, var(--red) 0%, #ff4436 100%);
+            color: var(--white);
+            border: 2px solid var(--black);
+            box-shadow: 4px 4px 0px var(--black);
+            transition: all 0.2s ease;
+        }
+        
+        .process-block:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px var(--black);
+        }
+        
+        /* Mobile touch optimizations */
+        .touch-manipulation {
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        /* Larger touch targets for mobile */
+        @media (max-width: 640px) {
+            .coffee-button {
+                padding: 1rem;
+            }
+            
+            input, select, button {
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+            
+            /* Better spacing for mobile */
+            .space-y-2 > * + * {
+                margin-top: 0.75rem;
+            }
+            
+            /* Mobile table improvements */
+            table {
+                font-size: 0.875rem;
+            }
+            
+            table th, table td {
+                padding: 0.5rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 120px;
+            }
+        }
+        
+        .operational-block {
+            background: linear-gradient(135deg, var(--white) 0%, #f8f8f8 100%);
+            color: var(--black);
+            border: 2px solid var(--red);
+            box-shadow: 3px 3px 0px var(--red);
+            transition: all 0.2s ease;
+        }
+        
+        .operational-block:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 5px 5px 0px var(--red);
+        }
+        
+        .card {
+            background: linear-gradient(135deg, var(--white) 0%, #f9f9f9 100%);
+            border: 3px solid var(--black);
+            border-radius: 15px;
+            box-shadow: 6px 6px 0px var(--black);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--red) 0%, #ff4436 100%);
+            color: var(--white);
+            border: 2px solid var(--black);
+            border-radius: 8px;
+            box-shadow: 3px 3px 0px var(--black);
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0px var(--black);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--white) 0%, #f0f0f0 100%);
+            color: var(--black);
+            border: 2px solid var(--black);
+            border-radius: 8px;
+            box-shadow: 3px 3px 0px var(--black);
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-secondary:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0px var(--black);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: var(--white);
+            border: 2px solid var(--black);
+            border-radius: 8px;
+            box-shadow: 3px 3px 0px var(--black);
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-danger:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0px var(--black);
+        }
+        
+        .input-field {
+            border: 2px solid var(--black);
+            border-radius: 8px;
+            background: var(--white);
+            font-weight: 500;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px rgba(235, 60, 36, 0.1);
+        }
+        
+        .coffee-icon {
+            font-size: 4rem;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+        }
+        
+        .title-text {
+            color: var(--red);
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .coffee-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .coffee-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .admin-login-prompt {
+            background: linear-gradient(135deg, var(--red) 0%, #b91c1c 100%);
+            border: 2px solid var(--black);
+            border-radius: 10px;
+            box-shadow: 4px 4px 0px var(--black);
+        }
+        
+        .balance-positive {
+            color: #059669;
+        }
+        
+        .balance-negative {
+            color: #dc2626;
+        }
+        
+        .transaction-credit {
+            color: #059669;
+            font-weight: bold;
+        }
+        
+        .transaction-debit {
+            color: #dc2626;
+            font-weight: bold;
+        }
+        
+        .user-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid var(--black);
+            border-radius: 10px;
+            box-shadow: 3px 3px 0px var(--black);
+        }
+        
+        .user-card:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0px var(--black);
+        }
+        
+        .error-message {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border: 2px solid #dc2626;
+            border-radius: 8px;
+            color: #991b1b;
+            font-weight: bold;
+        }
+        
+        .success-message {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 2px solid #16a34a;
+            border-radius: 8px;
+            color: #15803d;
+            font-weight: bold;
+        }
+        
+        .loading-spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--red);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive table styles */
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            border: 2px solid var(--black);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        table th {
+            background: linear-gradient(135deg, var(--red) 0%, #b91c1c 100%);
+            color: var(--white);
+            font-weight: bold;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid var(--black);
+        }
+        
+        table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            background: var(--white);
+        }
+        
+        table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        table tr:nth-child(even) td {
+            background: #f9fafb;
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <!-- RFID Login Screen -->
+    <div id="loginScreen" class="hidden min-h-screen flex items-center justify-center p-2 sm:p-4">
+        <div class="card p-4 sm:p-6 max-w-lg w-full text-center relative">
+            <!-- Časové a datumové informace - responzivní pozice -->
+            <div class="absolute top-2 sm:top-3 left-2 sm:left-3 text-left">
+                <div id="currentTime" class="text-sm sm:text-lg font-bold" style="color: var(--red);">00:00:00</div>
+                <div id="currentDate" class="text-xs sm:text-sm font-medium" style="color: var(--black);">1.1.2025</div>
+                <div id="nameDay" class="text-xs font-medium hidden sm:block" style="color: var(--gray);">Svátek má: ...</div>
+            </div>
+            
+            <!-- Logo firmy - responzivní pozice -->
+            <div class="absolute top-2 sm:top-3 right-2 sm:right-3">
+                <img src="60v4bruhye.png" alt="SFS Logo" class="h-6 sm:h-8 w-auto">
+            </div>
+            
+            <!-- Stav pokladny - responzivní pozice -->
+            <div class="absolute bottom-2 sm:bottom-3 right-2 sm:right-3 text-right">
+                <div class="text-base sm:text-lg" style="color: var(--red);">💰</div>
+                <div id="cashRegisterStatus" class="text-xs font-bold" style="color: var(--black);">0 Kč</div>
+            </div>
+            
+            <div class="coffee-icon mb-4 mt-12 sm:mt-8 text-3xl sm:text-4xl">☕</div>
+            <h1 class="text-xl sm:text-2xl title-text mb-2">WEBCofee</h1>
+            <p class="text-black mb-4 sm:mb-6 font-medium text-sm sm:text-base px-2">Přiložte RFID kartu pro přihlášení</p>
+            
+            <div class="relative mb-4 sm:mb-6">
+                <input 
+                    type="text" 
+                    id="rfidInput" 
+                    class="input-field w-full p-3 sm:p-4 text-center text-base sm:text-lg font-mono font-bold"
+                    placeholder="Čekám na sken karty..."
+                    autocomplete="off"
+                    autofocus
+                >
+            </div>
+            
+            <div class="text-xs sm:text-sm mb-3 sm:mb-4 px-2" style="color: var(--gray); font-weight: bold;">
+                Karta se načte automaticky po přiložení
+            </div>
+            
+            <div id="loginError" class="error-message mb-3 sm:mb-4 p-2 sm:p-3 hidden text-sm"></div>
+            
+            <button id="adminLoginBtn" class="btn-secondary px-4 sm:px-6 py-3 sm:py-3 text-sm min-h-[44px] touch-manipulation">
+                🔧 Admin přístup
+            </button>
+            
+            <!-- Admin RFID Prompt -->
+            <div id="adminRfidPrompt" class="hidden mt-3 sm:mt-4">
+                <div class="admin-login-prompt p-3 sm:p-4">
+                    <div class="text-base sm:text-lg font-bold mb-2">🔒 Admin přístup</div>
+                    <p class="text-xs sm:text-sm mb-3 sm:mb-4">Přiložte admin RFID kartu</p>
+                    <input 
+                        type="text" 
+                        id="adminRfidInput" 
+                        class="input-field w-full p-3 text-center font-mono font-bold text-sm sm:text-base"
+                        placeholder="Čekání na admin kartu..."
+                        autocomplete="off"
+                    >
+                    <div id="adminLoginError" class="error-message p-2 mt-2 sm:mt-3 hidden text-xs sm:text-sm"></div>
+                    <div class="text-xs mt-2 text-white">Tip: Pro admin přístup přiložte správnou kartu</div>
+                    <div class="flex flex-col sm:flex-row gap-2 sm:gap-0 mt-3">
+                        <button id="manualAdminBtn" class="btn-primary sm:mr-2 px-4 py-3 text-sm min-h-[44px] flex-1 sm:flex-none touch-manipulation">
+                            Zadat ručně
+                        </button>
+                        <button id="cancelAdminBtn" class="btn-secondary px-4 py-3 text-sm min-h-[44px] flex-1 sm:flex-none touch-manipulation">
+                            Zrušit
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Dashboard -->
+    <div id="userDashboard" class="hidden min-h-screen p-2 sm:p-4">
+        <div class="max-w-6xl mx-auto">
+            <!-- Header -->
+            <div class="card p-3 sm:p-6 mb-4 sm:mb-6">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
+                    <div class="text-center sm:text-left">
+                        <h1 class="text-lg sm:text-2xl title-text" id="userDashboardName">Jméno uživatele</h1>
+                        <p class="text-black font-medium text-sm sm:text-base" id="userDashboardCard">Karta: 1234567890</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm sm:text-lg font-bold" style="color: var(--red);">💰 Kredit</div>
+                        <div class="text-2xl sm:text-3xl font-bold" id="userDashboardBalance">0 Kč</div>
+                    </div>
+                    <button id="userLogoutBtn" class="btn-danger px-4 py-3 text-sm sm:text-base min-h-[44px] touch-manipulation">
+                        🚪 Odhlásit se
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Coffee Selection -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-4 sm:mb-6">
+                <div class="process-block p-4 sm:p-6 text-center rounded-lg">
+                    <button class="coffee-button w-full h-full min-h-[100px] sm:min-h-[120px] touch-manipulation" data-product="espresso" data-price="5">
+                        <div class="text-3xl sm:text-4xl mb-2">☕</div>
+                        <div class="font-bold text-base sm:text-lg">Espresso</div>
+                        <div class="text-white font-bold text-sm sm:text-base">💵 5 Kč</div>
+                    </button>
+                </div>
+                <div class="process-block p-4 sm:p-6 text-center rounded-lg">
+                    <button class="coffee-button w-full h-full min-h-[100px] sm:min-h-[120px] touch-manipulation" data-product="cappuccino" data-price="5">
+                        <div class="text-3xl sm:text-4xl mb-2">☕</div>
+                        <div class="font-bold text-base sm:text-lg">Cappuccino</div>
+                        <div class="text-white font-bold text-sm sm:text-base">💵 5 Kč</div>
+                    </button>
+                </div>
+                <div class="process-block p-4 sm:p-6 text-center rounded-lg sm:col-span-2 lg:col-span-1">
+                    <button class="coffee-button w-full h-full min-h-[100px] sm:min-h-[120px] touch-manipulation" data-product="latte" data-price="5">
+                        <div class="text-3xl sm:text-4xl mb-2">☕</div>
+                        <div class="font-bold text-base sm:text-lg">Latte</div>
+                        <div class="text-white font-bold text-sm sm:text-base">💵 5 Kč</div>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Transactions -->
+            <div class="card p-3 sm:p-6">
+                <h2 class="text-lg sm:text-xl title-text mb-3 sm:mb-4">📊 Vaše transakce</h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm sm:text-base">
+                        <thead>
+                            <tr>
+                                <th class="text-left p-2 sm:p-3">📅 Datum</th>
+                                <th class="text-left p-2 sm:p-3">📋 Typ</th>
+                                <th class="text-right p-2 sm:p-3">💰 Částka</th>
+                                <th class="text-left p-2 sm:p-3 hidden sm:table-cell">📝 Popis</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTransactionsList">
+                            <tr><td colspan="4" class="text-center p-3 font-medium">Načítání transakcí...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
