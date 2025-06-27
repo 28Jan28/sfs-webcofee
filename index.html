@@ -3140,15 +3140,38 @@
         
         // Biometric Authentication Functions
         async function startBiometricLogin() {
+            console.log('🔍 BIOMETRIC LOGIN DEBUG: Začátek');
+            
             try {
+                // Detailní debugging informace
+                console.log('🔍 window.PublicKeyCredential:', !!window.PublicKeyCredential);
+                console.log('🔍 navigator.credentials:', !!navigator.credentials);
+                console.log('🔍 window.location.hostname:', window.location.hostname);
+                console.log('🔍 window.location.origin:', window.location.origin);
+                
                 if (!window.PublicKeyCredential) {
                     throw new Error('WebAuthn není podporováno v tomto prohlížeči');
                 }
                 
                 // Kontrola dostupnosti biometrických autentifikátorů
                 const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+                console.log('🔍 Biometric available:', available);
+                
                 if (!available) {
                     throw new Error('Biometrické ověření není k dispozici na tomto zařízení');
+                }
+                
+                // Zkusíme zjistit, jaké credentials máme v databázi
+                console.log('🔍 Načítám registered credentials z databáze...');
+                const { data: registeredUsers, error: dbError } = await supabaseClient
+                    .from('users')
+                    .select('biometric_id, name')
+                    .not('biometric_id', 'is', null);
+                
+                if (dbError) {
+                    console.error('❌ Chyba při načítání credentials z DB:', dbError);
+                } else {
+                    console.log('🔍 Registered credentials:', registeredUsers);
                 }
                 
                 showToast('👆', 'Biometrické', 'Použijte biometrické ověření...', 'info');
@@ -3156,24 +3179,47 @@
                 // Vytvoření challenge pro autentifikaci
                 const challenge = new Uint8Array(32);
                 window.crypto.getRandomValues(challenge);
+                console.log('🔍 Generated challenge:', Array.from(challenge));
                 
+                // Získáme doménu pro správné RP ID
+                const hostname = window.location.hostname;
+                console.log('🔍 Netlify domain check:', hostname.includes('netlify.app'));
+                
+                // Určení RP ID podle domény
+                let effectiveRpId;
+                if (hostname === 'localhost') {
+                    effectiveRpId = hostname;
+                } else if (hostname.includes('netlify.app')) {
+                    effectiveRpId = 'netlify.app';
+                } else {
+                    effectiveRpId = hostname;
+                }
+                
+                console.log('🔍 Effective RP ID for authentication:', effectiveRpId);
+                
+                // Nový pokus - pouze jedna varianta s přesně stejným rpId jako při registraci
                 const publicKeyCredentialRequestOptions = {
                     challenge: challenge,
-                    allowCredentials: [], // Prázdný seznam umožní použití všech dostupných credentials na zařízení
-                    userVerification: 'required',
-                    timeout: 60000,
-                    rpId: window.location.hostname
+                    allowCredentials: [], // Prázdný seznam umožní použití všech dostupných credentials
+                    userVerification: 'discouraged', // Zmírnění požadavků na verifikaci
+                    timeout: 120000, // Delší timeout pro dostatek času
+                    rpId: effectiveRpId
                 };
                 
-                // Požádáme o biometrické ověření
+                console.log('🔍 Authentication options:', publicKeyCredentialRequestOptions);
+                console.log('🔍 Spouštím navigator.credentials.get()...');
+                
                 const credential = await navigator.credentials.get({
-                    publicKey: publicKeyCredentialRequestOptions
+                    publicKey: publicKeyCredentialRequestOptions,
+                    mediation: 'optional' // Povolit mediaci pro lepší UX
                 });
                 
                 if (credential) {
                     // Uspěšné biometrické ověření
-                    console.log('Biometrické ověření úspěšné:', credential.id);
-                    console.log('Credential raw ID:', credential.rawId);
+                    console.log('✅ Biometrické ověření úspěšné!');
+                    console.log('🔍 credential.id:', credential.id);
+                    console.log('🔍 credential.rawId:', credential.rawId);
+                    console.log('🔍 credential.type:', credential.type);
                     
                     // Převedeme credential.id na base64url string pro porovnání s databází
                     const credentialIdBase64 = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))
@@ -3181,22 +3227,29 @@
                         .replace(/\//g, '_')
                         .replace(/=/g, '');
                     
-                    console.log('Credential ID (base64url):', credentialIdBase64);
+                    console.log('🔍 Credential ID (base64url):', credentialIdBase64);
+                    console.log('🔍 Credential ID (original):', credential.id);
                     
                     // Pokusíme se najít uživatele podle biometrického ID
                     await handleBiometricLogin(credentialIdBase64);
                 } else {
-                    throw new Error('Biometrické ověření selhalo');
+                    throw new Error('Biometrické ověření selhalo - žádné credential vráceno');
                 }
                 
             } catch (error) {
-                console.error('Chyba při biometrickém přihlášení:', error);
+                console.error('❌ Chyba při biometrickém přihlášení:', error);
+                console.error('❌ Error name:', error.name);
+                console.error('❌ Error message:', error.message);
+                console.error('❌ Error stack:', error.stack);
+                
                 if (error.name === 'NotAllowedError') {
-                    showToast('❌', 'Biometric Error', 'Biometrické ověření bylo zrušeno nebo odmítnuto', 'error');
+                    showToast('❌', 'Biometric Error', 'Biometrické ověření bylo zrušeno nebo odmítnuto. Zkuste to znovu a potvrďte otisk prstu.', 'error');
                 } else if (error.name === 'NotSupportedError') {
-                    showToast('❌', 'Biometric Error', 'Biometrické ověření není podporováno', 'error');
+                    showToast('❌', 'Biometric Error', 'Biometrické ověření není podporováno na vašem zařízení nebo prohlížeči. Zkuste Chrome/Edge.', 'error');
+                } else if (error.name === 'InvalidStateError') {
+                    showToast('❌', 'Biometric Error', 'Nejsou k dispozici žádné přístupové klíče na tomto zařízení. Zkuste se nejprve zaregistrovat v admin sekci.', 'error');
                 } else if (error.message.includes('k dispozici žádné přístupové klíče')) {
-                    showToast('❌', 'Biometric Error', 'Nejsou registrované žádné biometrické klíče na tomto zařízení pro tuto doménu', 'error');
+                    showToast('❌', 'Biometric Error', 'Nenalezeny žádné biometrické klíče pro tuto doménu. Potřebujete nejprve registraci u admina.', 'error');
                 } else {
                     showToast('❌', 'Biometric Error', 'Chyba při biometrickém ověření: ' + error.message, 'error');
                 }
@@ -3206,11 +3259,15 @@
         // Registrace biometrické autentifikace pro uživatele
         async function registerBiometric(userId, userName) {
             try {
+                console.log('🔍 BIOMETRIC REGISTER DEBUG: Začátek registrace pro ID:', userId);
+                
                 if (!window.PublicKeyCredential) {
                     throw new Error('WebAuthn není podporováno v tomto prohlížeči');
                 }
                 
                 const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+                console.log('🔍 Biometric available:', available);
+                
                 if (!available) {
                     throw new Error('Biometrické ověření není k dispozici na tomto zařízení');
                 }
@@ -3220,37 +3277,64 @@
                 // Vytvoření challenge pro registraci
                 const challenge = new Uint8Array(32);
                 window.crypto.getRandomValues(challenge);
+                console.log('🔍 Challenge created:', Array.from(challenge));
                 
                 // Vytvoření user ID z userId
                 const userIdBuffer = new TextEncoder().encode(userId);
+                console.log('🔍 User ID buffer:', Array.from(userIdBuffer));
+                
+                // Získáme doménu pro správné RP ID
+                const hostname = window.location.hostname;
+                
+                // Určení RP ID podle domény
+                let effectiveRpId;
+                if (hostname === 'localhost') {
+                    effectiveRpId = hostname;
+                } else if (hostname.includes('netlify.app')) {
+                    effectiveRpId = 'netlify.app';
+                } else {
+                    effectiveRpId = hostname;
+                }
+                
+                console.log('🔍 Effective RP ID for registration:', effectiveRpId);
+                console.log('🔍 Full hostname:', hostname);
+                console.log('🔍 Location origin:', window.location.origin);
                 
                 const publicKeyCredentialCreationOptions = {
                     challenge: challenge,
                     rp: {
                         name: "WEBCofee",
-                        id: window.location.hostname,
+                        id: effectiveRpId // Používáme správné RP ID podle domény
                     },
                     user: {
                         id: userIdBuffer,
                         name: userName,
                         displayName: userName,
                     },
-                    pubKeyCredParams: [{alg: -7, type: "public-key"}],
+                    pubKeyCredParams: [
+                        { alg: -7, type: "public-key" }, // ES256
+                        { alg: -257, type: "public-key" } // RS256
+                    ],
                     authenticatorSelection: {
                         authenticatorAttachment: "platform",
-                        userVerification: "required"
+                        userVerification: "discouraged", // Změna z 'required' na 'discouraged' pro lepší kompatibilitu
+                        requireResidentKey: false // Pro lepší kompatibilitu
                     },
-                    timeout: 60000,
-                    attestation: "direct"
+                    timeout: 120000, // Delší timeout pro více času
+                    attestation: "none" // Změna z "direct" na "none" pro lepší kompatibilitu
                 };
+                
+                console.log('🔍 Registration options:', publicKeyCredentialCreationOptions);
+                console.log('🔍 Spouštím navigator.credentials.create()...');
                 
                 const credential = await navigator.credentials.create({
                     publicKey: publicKeyCredentialCreationOptions
                 });
                 
                 if (credential) {
-                    console.log('Biometrická registrace úspěšná:', credential.id);
-                    console.log('Credential raw ID:', credential.rawId);
+                    console.log('✅ Biometrická registrace úspěšná!');
+                    console.log('🔍 Credential ID:', credential.id);
+                    console.log('🔍 Raw credential:', credential);
                     
                     // Převedeme credential.id na base64url string pro konzistentní ukládání
                     const credentialIdBase64 = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))
@@ -3258,7 +3342,7 @@
                         .replace(/\//g, '_')
                         .replace(/=/g, '');
                     
-                    console.log('Credential ID (base64url):', credentialIdBase64);
+                    console.log('🔍 Credential ID (base64url):', credentialIdBase64);
                     
                     // Uložíme credential ID do databáze pro daného uživatele
                     const { error } = await supabaseClient
@@ -3266,17 +3350,29 @@
                         .update({ biometric_id: credentialIdBase64 })
                         .eq('id', userId);
                     
-                    if (error) throw error;
+                    if (error) {
+                        console.error('❌ DB update error:', error);
+                        throw error;
+                    }
                     
-                    showToast('✅', 'Úspěch', 'Biometrické ověření bylo úspěšně zaregistrováno', 'success');
+                    showToast('✅', 'Úspěch', 'Biometrické ověření bylo úspěšně zaregistrováno! Nyní se můžete přihlásit pomocí otisku prstu.', 'success');
                     return credentialIdBase64;
                 } else {
                     throw new Error('Registrace biometrického ověření selhala');
                 }
                 
             } catch (error) {
-                console.error('Chyba při registraci biometrického ověření:', error);
-                showToast('❌', 'Biometric Error', 'Chyba při registraci: ' + error.message, 'error');
+                console.error('❌ Chyba při registraci biometrického ověření:', error);
+                console.error('❌ Error name:', error.name);
+                console.error('❌ Error message:', error.message);
+                
+                if (error.name === 'NotAllowedError') {
+                    showToast('❌', 'Biometric Error', 'Registrace byla zrušena nebo odmítnuta. Zkuste znovu a potvrďte otisk prstu.', 'error');
+                } else if (error.name === 'NotSupportedError') {
+                    showToast('❌', 'Biometric Error', 'Biometrické ověření není podporováno. Zkuste jiný prohlížeč (Chrome/Edge).', 'error');
+                } else {
+                    showToast('❌', 'Biometric Error', 'Chyba při registraci: ' + error.message, 'error');
+                }
                 return null;
             }
         }
