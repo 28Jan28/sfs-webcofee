@@ -3185,12 +3185,14 @@
                 const hostname = window.location.hostname;
                 console.log('🔍 Netlify domain check:', hostname.includes('netlify.app'));
                 
-                // Určení RP ID podle domény
+                // Určení RP ID podle domény - OPRAVENO pro Netlify
                 let effectiveRpId;
                 if (hostname === 'localhost') {
                     effectiveRpId = hostname;
                 } else if (hostname.includes('netlify.app')) {
-                    effectiveRpId = 'netlify.app';
+                    // Pro Netlify používáme plnou doménu místo 'netlify.app'
+                    // WebAuthn vyžaduje, aby rpId bylo stejné nebo nadřazené aktuální doméně
+                    effectiveRpId = hostname; // sfs-webcofee.netlify.app
                 } else {
                     effectiveRpId = hostname;
                 }
@@ -3286,12 +3288,14 @@
                 // Získáme doménu pro správné RP ID
                 const hostname = window.location.hostname;
                 
-                // Určení RP ID podle domény
+                // Určení RP ID podle domény - OPRAVENO pro Netlify
                 let effectiveRpId;
                 if (hostname === 'localhost') {
                     effectiveRpId = hostname;
                 } else if (hostname.includes('netlify.app')) {
-                    effectiveRpId = 'netlify.app';
+                    // Pro Netlify používáme plnou doménu místo 'netlify.app'
+                    // WebAuthn vyžaduje, aby rpId bylo stejné nebo nadřazené aktuální doméně
+                    effectiveRpId = hostname; // sfs-webcofee.netlify.app
                 } else {
                     effectiveRpId = hostname;
                 }
