@@ -372,7 +372,7 @@
             <!-- Zobrazení verze aplikace -->
             <div class="mt-3 sm:mt-4 text-center">
                 <span class="text-xs sm:text-sm px-3 py-1 rounded-full" style="background: rgba(235, 60, 36, 0.1); color: var(--red); font-weight: bold; border: 1px solid var(--red);">
-                    📋 WEBCofee v1.10
+                    📋 WEBCofee v1.11
                 </span>
             </div>
             
@@ -3879,7 +3879,7 @@
             }
         }
         
-        // Použití biometrického ověření pro odvápnění
+        // Použití biometrického ověření pro odvápnění - robustní implementace
         async function useBiometricForDescaling() {
             try {
                 // Ověření dostupnosti WebAuthn API
@@ -3891,92 +3891,173 @@
                 
                 showToast('👆', 'Biometrické', 'Použijte biometrické ověření...', 'info');
                 
+                // Získání všech uživatelů s biometrickými klíči (kopie z hlavního přihlášení)
+                const { data: usersWithBiometric, error: biometricError } = await supabaseClient
+                    .from('users')
+                    .select('id, name, biometric_id, rfid_card_id, nfc_card_id, email, balance')
+                    .not('biometric_id', 'is', null)
+                    .order('name', { ascending: true });
+                
+                if (biometricError) {
+                    console.error('❌ Chyba při načítání biometrických klíčů:', biometricError);
+                    throw new Error('Nelze načíst registrované biometrické klíče');
+                }
+
+                console.log('🔍 Nalezené biometrické klíče pro odvápnění:', usersWithBiometric);
+                
+                if (!usersWithBiometric || usersWithBiometric.length === 0) {
+                    throw new Error('Nejsou registrovány žádné biometrické klíče. Zaregistrujte se nejprve v admin sekci.');
+                }
+                
+                // Detailní log biometrických klíčů pro diagnostiku
+                usersWithBiometric.forEach(user => {
+                    console.log(`🔍 Uživatel: ${user.name}, biometric_id formát: ${user.biometric_id ? user.biometric_id.substring(0, 10) + '...' : 'null'}`);
+                });
+
+                // Vytvoříme allowCredentials ze všech dostupných klíčů (robustní verze)
+                const allowCredentials = usersWithBiometric
+                    .filter(user => !!user.biometric_id) // Ignorujeme případné null hodnoty
+                    .map(user => {
+                        console.log('🔍 Zpracovávám biometric_id:', user.biometric_id, 'pro uživatele:', user.name);
+                        
+                        // Bezpečné dekódování base64 - obaleno v try-catch
+                        let rawId;
+                        try {
+                            // Normalizace base64 řetězce (odstranění neplatných znaků)
+                            let normalizedId = user.biometric_id;
+                            
+                            // Nejprve zkontrolujeme formát a ošetříme případné abnormality
+                            if (normalizedId.includes('-') || normalizedId.includes('_')) {
+                                // WebAuthn často používá base64url formát, který používá '-' a '_' místo '+' a '/'
+                                normalizedId = normalizedId.replace(/-/g, '+').replace(/_/g, '/');
+                                
+                                // Případně doplníme chybějící '=' na konci
+                                while (normalizedId.length % 4 !== 0) {
+                                    normalizedId += '=';
+                                }
+                                console.log('🔍 Normalizovaný base64 řetězec:', normalizedId);
+                            }
+                            
+                            // Nyní se pokusíme dekódovat
+                            rawId = Uint8Array.from(atob(normalizedId), c => c.charCodeAt(0));
+                            console.log('✅ Úspěšně dekódován biometric_id pro:', user.name);
+                        } catch (decodeError) {
+                            console.error('❌ Chyba při dekódování biometric_id:', decodeError);
+                            console.log('❌ Pro uživatele:', user.name);
+                            
+                            // Pokud se nepodaří dekódovat, vrátíme null a později tyto záznamy odfiltrujeme
+                            return null;
+                        }
+                        
+                        // Vrátíme credential objekt
+                        return {
+                            type: 'public-key',
+                            id: rawId,
+                            transports: ['internal', 'hybrid', 'usb'] // rozšířená podpora pro různé transporty
+                        };
+                    })
+                    .filter(cred => cred !== null); // Odstraníme všechny neplatné credential
+
+                console.log('🔍 Prepared allowCredentials pro odvápnění:', allowCredentials);
+
+                if (allowCredentials.length === 0) {
+                    throw new Error('Nejsou k dispozici žádné platné biometrické klíče');
+                }
+
                 // Vytvoření challenge pro autentifikaci
                 const challenge = new Uint8Array(32);
                 window.crypto.getRandomValues(challenge);
                 
-                // Získání allowCredentials z databáze - všechny biometrické ID pro nabídnutí uživateli
-                const { data: users, error } = await supabaseClient
-                    .from('users')
-                    .select('id, name, biometric_id')
-                    .not('biometric_id', 'is', null)
-                    .order('name', { ascending: true });
+                // Efektivní RP ID (kopie z hlavního přihlášení)
+                const effectiveRpId = (window.location.hostname === 'localhost' || window.location.hostname.startsWith('192.168')) 
+                    ? window.location.hostname 
+                    : window.location.hostname;
                 
-                if (error) throw error;
-                
-                // Vytvoření seznamu allowCredentials
-                const allowCredentials = users
-                    .filter(user => user.biometric_id) // Pouze uživatelé s biometric_id
-                    .map(user => {
-                        try {
-                            // Převod base64url na ArrayBuffer
-                            const rawId = base64URLToArrayBuffer(user.biometric_id);
-                            
-                            return {
-                                type: 'public-key',
-                                id: rawId,
-                                transports: ['internal']
-                            };
-                        } catch (e) {
-                            console.error('Chyba při zpracování biometric_id:', e);
-                            return null;
-                        }
-                    })
-                    .filter(Boolean); // Odstranit null hodnoty
-                
-                // Definice parametrů pro autentifikaci
-                const publicKeyOptions = {
-                    // Náhodná výzva
+                // Robustní parametry pro autentifikace (kopie z hlavního přihlášení)
+                const publicKeyCredentialRequestOptions = {
                     challenge: challenge,
-                    
-                    // Identifikace RP
-                    rpId: window.location.hostname,
-                    
-                    // Seznam povolených credentials
-                    allowCredentials: allowCredentials,
-                    
-                    // Timeout v milisekundách
-                    timeout: 60000,
-                    
-                    // Požadovat uživatelské ověření
-                    userVerification: 'preferred',
+                    allowCredentials: allowCredentials, // Používáme konkrétní klíče z databáze
+                    userVerification: 'preferred', // Změna z 'discouraged' na 'preferred' pro lepší kompatibilitu
+                    timeout: 300000, // Delší timeout (5 minut) pro víc času na ověření
+                    rpId: effectiveRpId
                 };
                 
-                // Provedení autentifikace
+                console.log('🔍 Authentication options pro odvápnění:', publicKeyCredentialRequestOptions);
+                console.log('🔍 Spouštím navigator.credentials.get() pro odvápnění...');
+                
                 const credential = await navigator.credentials.get({
-                    publicKey: publicKeyOptions
+                    publicKey: publicKeyCredentialRequestOptions,
+                    mediation: 'optional' // Povolit mediaci pro lepší UX
                 });
                 
                 if (credential) {
                     // Uspěšné biometrické ověření
-                    console.log('✅ Biometrické ověření úspěšné!');
+                    console.log('✅ Biometrické ověření pro odvápnění úspěšné!');
+                    console.log('🔍 credential.id:', credential.id);
+                    console.log('🔍 credential.rawId:', credential.rawId);
+                    console.log('🔍 credential.type:', credential.type);
                     
-                    // Získání credential ID jako base64url string
-                    const rawId = new Uint8Array(credential.rawId);
-                    const credentialIdBase64 = arrayBufferToBase64URL(rawId);
+                    // Převedeme credential.id na base64url string pro porovnání s databází
+                    const credentialIdBase64 = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))
+                        .replace(/\+/g, '-')
+                        .replace(/\//g, '_')
+                        .replace(/=/g, '');
                     
-                    // Vyhledat uživatele podle credential ID
-                    const { data, error } = await supabaseClient
-                        .from('users')
-                        .select('*')
-                        .eq('biometric_id', credentialIdBase64)
-                        .limit(1);
+                    console.log('🔍 Credential ID (base64url):', credentialIdBase64);
+                    console.log('🔍 Credential ID (original):', credential.id);
                     
-                    if (error) throw error;
+                    // Převedeme credential ID na různé formáty pro porovnání (robustní hledání)
+                    const credentialIdRaw = credential.id;
                     
-                    if (data && data.length > 0) {
-                        const user = data[0];
+                    console.log('🔍 Hledám uživatele podle credential ID pro odvápnění:');
+                    console.log('- Raw credential.id:', credentialIdRaw);
+                    console.log('- Base64 encoded:', credentialIdBase64);
+                    
+                    // Flexibilnější hledání uživatele s ohledem na různé formáty base64
+                    let foundUser = null;
+                    
+                    // Pokusíme se najít uživatele pomocí různých transformací ID
+                    for (const user of usersWithBiometric) {
+                        console.log(`🔍 Porovnávám s uživatelem: ${user.name}`);
+                        
+                        if (!user.biometric_id) continue;
+                        
+                        // Přímé porovnání
+                        if (user.biometric_id === credentialIdBase64 || 
+                            user.biometric_id === credentialIdRaw) {
+                            console.log('✅ Nalezen uživatel přímým porovnáním:', user.name);
+                            foundUser = user;
+                            break;
+                        }
+                        
+                        // Normalizované porovnání (base64 vs base64url)
+                        let normalizedStoredId = user.biometric_id;
+                        if (normalizedStoredId.includes('-') || normalizedStoredId.includes('_')) {
+                            normalizedStoredId = normalizedStoredId.replace(/-/g, '+').replace(/_/g, '/');
+                            while (normalizedStoredId.length % 4 !== 0) {
+                                normalizedStoredId += '=';
+                            }
+                        }
+                        
+                        if (normalizedStoredId === credentialIdBase64) {
+                            console.log('✅ Nalezen uživatel normalizovaným porovnáním:', user.name);
+                            foundUser = user;
+                            break;
+                        }
+                    }
+                    
+                    if (foundUser) {
                         // Uložíme ID uživatele do global scope pro pozdější použití
-                        currentDescalingUser = user;
+                        currentDescalingUser = foundUser;
                         
                         // Skrýt auth dialog
                         document.getElementById('descalingAuthPrompt').classList.add('hidden');
                         
                         // Zobrazit formulář pro datum
-                        showDescalingDateForm(user);
+                        showDescalingDateForm(foundUser);
                         
                         // Zobrazit toast
-                        showToast('✅', 'Ověřeno', `Uživatel ${user.name} úspěšně ověřen (biometricky)`, 'success');
+                        showToast('✅', 'Ověřeno', `Uživatel ${foundUser.name} úspěšně ověřen (biometricky)`, 'success');
                     } else {
                         throw new Error('Uživatel s tímto biometrickým ID nebyl nalezen');
                     }
@@ -3985,7 +4066,7 @@
                 }
                 
             } catch (error) {
-                console.error('❌ Chyba při biometrickém ověření:', error);
+                console.error('❌ Chyba při biometrickém ověření pro odvápnění:', error);
                 console.error('❌ Error name:', error.name);
                 console.error('❌ Error message:', error.message);
                 
