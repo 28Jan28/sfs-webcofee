@@ -358,7 +358,7 @@
             <!-- Zobrazení verze aplikace -->
             <div class="mt-3 sm:mt-4 text-center">
                 <span class="text-xs sm:text-sm px-3 py-1 rounded-full" style="background: rgba(235, 60, 36, 0.1); color: var(--red); font-weight: bold; border: 1px solid var(--red);">
-                    📋 WEBCofee v1.04
+                    📋 WEBCofee v1.05
                 </span>
             </div>
             
@@ -1165,10 +1165,10 @@
             "31.12": "Silvestr"
         };
         
-        // Admin RFID karta - více možných formátů
+        // Admin RFID karta - POUZE přesné hodnoty z bezpečnostních důvodů
         const ADMIN_RFID = '0046584111';    // Plná hodnota s nulou
         const ADMIN_RFID_ALT = '46584111';  // Bez počáteční nuly
-        const ADMIN_RFID_PREFIX = '0046584'; // Prefix pro identifikaci i při částečném zadání
+        // BEZPEČNOSTNÍ POZNÁMKA: Prefix byl odstraněn kvůli bezpečnostní chybě - nelze použít částečné porovnání
         
         // ===== Funkce pro aktualizaci času, data a svátků =====
         
@@ -1306,10 +1306,13 @@
                         adminInputBuffer += event.key;
                         console.log('Admin input buffer:', adminInputBuffer);
                         
-                        // Kontrola, zda buffer obsahuje admin kartu
-                        if (adminInputBuffer.includes('0046584111') || 
-                            adminInputBuffer.includes('46584111')) {
-                            console.log('*** ADMIN RFID KARTA DETEKOVÁNA V BUFFERU ***');
+                        // BEZPEČNÁ kontrola - buffer musí být přesně roven admin kartě
+                        // Používáme endsWith pro případ, že buffer obsahuje další znaky na začátku
+                        if (adminInputBuffer.endsWith('0046584111') || 
+                            adminInputBuffer.endsWith('46584111') ||
+                            adminInputBuffer === '0046584111' ||
+                            adminInputBuffer === '46584111') {
+                            console.log('*** ADMIN RFID KARTA DETEKOVÁNA V BUFFERU (přesná shoda) ***');
                             // Nastavíme admin mód
                             adminMode = true;
                             // Skryjeme admin dialog
@@ -1434,17 +1437,14 @@
             console.log('Admin RFID očekáváno:', ADMIN_RFID, 'nebo', ADMIN_RFID_ALT);
             console.log('Délka vstupu:', rfidValue.length);
             
-            // NOVÁ IMPLEMENTACE:
-            // Detekce admin karty - kontrolujeme, zda zadaná hodnota OBSAHUJE kompletní nebo část očekávané hodnoty
-            // "0046584" je 7 znaků, což je dostatek k bezpečné identifikaci
-            if (rfidValue.length >= 7) {
-                // Kontrola, zda vstup obsahuje klíčovou část admin karty nebo celou hodnotu
-                // Toto řeší problém postupného zadávání znaků
-                if (rfidValue.startsWith(ADMIN_RFID_PREFIX) || 
-                    rfidValue.includes('0046584111') || 
-                    rfidValue.includes('46584111') || 
-                    ADMIN_RFID.startsWith(rfidValue)) {
-                    console.log('*** ADMIN RFID KARTA ÚSPĚŠNĚ OVĚŘENA ***');
+            // BEZPEČNÁ IMPLEMENTACE:
+            // Detekce admin karty - POUZE přesné porovnání celých hodnot z bezpečnostních důvodů
+            // Musí být zadáno celé 10místné číslo karty pro admin přístup
+            if (rfidValue.length >= 10) {
+                // BEZPEČNÉ porovnání - pouze přesné shody s kompletními admin kartami
+                // Odstraněno částečné porovnání kvůli bezpečnostní chybě
+                if (rfidValue === ADMIN_RFID || rfidValue === ADMIN_RFID_ALT) {
+                    console.log('*** ADMIN RFID KARTA ÚSPĚŠNĚ OVĚŘENA (přesná shoda) ***');
                     // Nastavíme admin mód
                     adminMode = true;
                     // Skryjeme admin dialog
