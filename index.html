@@ -358,7 +358,7 @@
             <!-- Zobrazení verze aplikace -->
             <div class="mt-3 sm:mt-4 text-center">
                 <span class="text-xs sm:text-sm px-3 py-1 rounded-full" style="background: rgba(235, 60, 36, 0.1); color: var(--red); font-weight: bold; border: 1px solid var(--red);">
-                    📋 WEBCofee v1.02
+                    📋 WEBCofee v1.03
                 </span>
             </div>
             
@@ -3225,12 +3225,42 @@
                 
                 console.log('🔍 Effective RP ID for authentication:', effectiveRpId);
                 
-                // Nový pokus - pouze jedna varianta s přesně stejným rpId jako při registraci
+                // NOVÝ PŘÍSTUP: Načteme konkrétní biometrické klíče z databáze
+                console.log('🔍 Načítám registrované biometrické klíče z databáze...');
+                
+                const { data: usersWithBiometric, error: biometricError } = await supabaseClient
+                    .from('users')
+                    .select('id, name, biometric_id')
+                    .not('biometric_id', 'is', null);
+
+                if (biometricError) {
+                    console.error('❌ Chyba při načítání biometrických klíčů:', biometricError);
+                    throw new Error('Nelze načíst registrované biometrické klíče');
+                }
+
+                console.log('🔍 Nalezené biometrické klíče:', usersWithBiometric);
+
+                if (!usersWithBiometric || usersWithBiometric.length === 0) {
+                    throw new Error('Nejsou registrovány žádné biometrické klíče. Zaregistrujte se nejprve v admin sekci.');
+                }
+
+                // Vytvoříme allowCredentials ze všech dostupných klíčů
+                const allowCredentials = usersWithBiometric.map(user => {
+                    // Převedeme base64 zpět na Uint8Array
+                    const rawId = Uint8Array.from(atob(user.biometric_id), c => c.charCodeAt(0));
+                    return {
+                        type: 'public-key',
+                        id: rawId,
+                        transports: ['internal'] // pro biometrické senzory
+                    };
+                });
+
+                console.log('🔍 Prepared allowCredentials:', allowCredentials);
+
+                // Nový pokus s konkrétními allowCredentials
                 const publicKeyCredentialRequestOptions = {
                     challenge: challenge,
-                    // DŮLEŽITÉ: Ponecháváme allowCredentials neuvedené vůbec, místo prázdného pole
-                    // To umožní prohlížeči najít všechny dostupné klíče
-                    // allowCredentials: [],
+                    allowCredentials: allowCredentials, // Používáme konkrétní klíče z databáze
                     userVerification: 'preferred', // Změna z 'discouraged' na 'preferred' pro lepší kompatibilitu
                     timeout: 300000, // Delší timeout (5 minut) pro víc času na ověření
                     rpId: effectiveRpId
@@ -3261,7 +3291,20 @@
                     console.log('🔍 Credential ID (original):', credential.id);
                     
                     // Pokusíme se najít uživatele podle biometrického ID
-                    await handleBiometricLogin(credentialIdBase64);
+                    const foundUser = usersWithBiometric.find(user => user.biometric_id === credentialIdBase64);
+                    
+                    if (!foundUser) {
+                        // Zkusíme také původní credential.id pro případ jiného formátu
+                        const foundUserAlt = usersWithBiometric.find(user => user.biometric_id === credential.id);
+                        if (foundUserAlt) {
+                            await handleBiometricLogin(credential.id);
+                        } else {
+                            console.error('❌ Uživatel s tímto biometrickým klíčem nebyl nalezen');
+                            throw new Error('Uživatel s tímto biometrickým klíčem nebyl nalezen');
+                        }
+                    } else {
+                        await handleBiometricLogin(credentialIdBase64);
+                    }
                 } else {
                     throw new Error('Biometrické ověření selhalo - žádné credential vráceno');
                 }
