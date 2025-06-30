@@ -230,6 +230,14 @@
             border-radius: 4px;
         }
         
+        .transaction-descaling {
+            color: #2563eb; 
+            font-weight: bold;
+            background: rgba(37, 99, 235, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
         table {
             border-collapse: separate;
             border-spacing: 0;
@@ -351,14 +359,20 @@
             
             <div id="loginError" class="error-message mb-3 sm:mb-4 p-2 sm:p-3 hidden text-sm"></div>
             
-            <button id="adminLoginBtn" class="btn-secondary px-4 sm:px-6 py-3 sm:py-3 text-sm min-h-[44px] touch-manipulation">
-                🔧 Admin přístup
-            </button>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <button id="adminLoginBtn" class="btn-secondary px-4 sm:px-6 py-3 sm:py-3 text-sm min-h-[44px] touch-manipulation">
+                    🔧 Admin přístup
+                </button>
+                <button id="descalingBtn" class="btn-secondary px-4 sm:px-6 py-3 sm:py-3 text-sm min-h-[44px] touch-manipulation">
+                    🧹 Odvápnění
+                    <div id="lastDescalingDate" class="text-xs mt-1 opacity-80"></div>
+                </button>
+            </div>
             
             <!-- Zobrazení verze aplikace -->
             <div class="mt-3 sm:mt-4 text-center">
                 <span class="text-xs sm:text-sm px-3 py-1 rounded-full" style="background: rgba(235, 60, 36, 0.1); color: var(--red); font-weight: bold; border: 1px solid var(--red);">
-                    📋 WEBCofee v1.06
+                    📋 WEBCofee v1.10
                 </span>
             </div>
             
@@ -385,6 +399,63 @@
                         </button>
                     </div>
                 </div>
+            </div>
+            
+
+        </div>
+    </div>
+
+    <!-- Descaling Auth Prompt -->
+    <div id="descalingAuthPrompt" class="hidden min-h-screen flex items-center justify-center p-2 sm:p-4">
+        <div class="card p-4 sm:p-6 max-w-lg w-full text-center">
+            <div class="text-base sm:text-lg font-bold mb-2">🧹 Odvápnění - Ověření</div>
+            <p class="text-xs sm:text-sm mb-3 sm:mb-4">Přiložte RFID kartu pro ověření</p>
+            <input 
+                type="text" 
+                id="descalingRfidInput" 
+                class="input-field w-full p-3 text-center font-mono font-bold text-sm sm:text-base"
+                placeholder="Čekání na kartu..."
+                autocomplete="off"
+            >
+            <div id="descalingAuthError" class="error-message p-2 mt-2 sm:mt-3 hidden text-xs sm:text-sm"></div>
+            <div class="text-xs mt-2 text-white">Tip: Můžete použít libovolnou kartu nebo biometrické přihlášení</div>
+            <div class="flex flex-col sm:flex-row gap-2 sm:gap-0 mt-3">
+                <button id="descalingNfcBtn" class="btn-primary sm:mr-2 px-4 py-3 text-sm min-h-[44px] flex-1 sm:flex-none touch-manipulation">
+                    📱 NFC
+                </button>
+                <button id="descalingBioBtn" class="btn-primary sm:mr-2 px-4 py-3 text-sm min-h-[44px] flex-1 sm:flex-none touch-manipulation">
+                    👆 Biometrické
+                </button>
+                <button id="cancelDescalingAuthBtn" class="btn-secondary px-4 py-3 text-sm min-h-[44px] flex-1 sm:flex-none touch-manipulation">
+                    Zrušit
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Descaling Date Form -->
+    <div id="descalingDateForm" class="hidden min-h-screen flex items-center justify-center p-2 sm:p-4">
+        <div class="card p-4 sm:p-6 max-w-lg w-full text-center">
+            <div class="text-base sm:text-lg font-bold mb-2">🧹 Odvápnění - Zadání data</div>
+            <p class="text-xs sm:text-sm mb-3 sm:mb-4">Zadejte datum provedení odvápnění</p>
+            
+            <div class="mb-3">
+                <label for="descalingDate" class="block text-white text-sm mb-1">Datum odvápnění:</label>
+                <input 
+                    type="date" 
+                    id="descalingDate" 
+                    class="bg-white text-black rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-red-600" 
+                    required
+                />
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-2 sm:gap-0 mt-3">
+                <button id="saveDescalingBtn" class="btn-primary sm:mr-2 px-4 py-3 text-sm min-h-[44px] flex-1 sm:flex-none touch-manipulation">
+                    Uložit
+                </button>
+                <button id="cancelDescalingDateBtn" class="btn-secondary px-4 py-3 text-sm min-h-[44px] flex-1 sm:flex-none touch-manipulation">
+                    Zrušit
+                </button>
             </div>
         </div>
     </div>
@@ -2946,6 +3017,13 @@
                             icon = '💰';
                             typeText = 'Dobití';
                             userName = `👤 ${trans.users?.name || 'Neznámý uživatel'}`;
+                        } else if (trans.type === 'descaling') {
+                            // Odvápnění
+                            color = 'transaction-descaling';
+                            amount = `0 Kč`;
+                            icon = '🧹';
+                            typeText = 'Odvápnění';
+                            userName = `👤 ${trans.users?.name || 'Neznámý uživatel'}`;
                         } else {
                             // Objednávka kávy
                             color = 'transaction-debit';
@@ -3676,6 +3754,455 @@
                 showToast('❌', 'Chyba', 'Chyba při odebírání biometrického ověření', 'error');
             }
         }
+        // ===== Funkce pro odvápnění =====
+        
+        // Zobrazení dialogu pro ověření identity pro odvápnění
+        function showDescalingAuthPrompt() {
+            // Schovat hlavní přihlašovací obrazovku
+            const loginScreen = document.getElementById('loginScreen');
+            if (loginScreen) {
+                loginScreen.classList.add('hidden');
+            }
+            
+            // Zobrazit dialog pro odvápnění
+            const descalingAuthPrompt = document.getElementById('descalingAuthPrompt');
+            if (descalingAuthPrompt) {
+                descalingAuthPrompt.classList.remove('hidden');
+            }
+            
+            // Resetovat input pole
+            const descalingRfidInput = document.getElementById('descalingRfidInput');
+            if (descalingRfidInput) {
+                descalingRfidInput.value = '';
+                descalingRfidInput.focus();
+            }
+            
+            // Schovat případné chybové hlášky
+            const descalingAuthError = document.getElementById('descalingAuthError');
+            if (descalingAuthError) {
+                descalingAuthError.classList.add('hidden');
+            }
+        }
+        
+        // Zpracování ověření pro odvápnění
+        async function handleDescalingAuth(rfidValue = null) {
+            try {
+                let user = null;
+                
+                if (rfidValue) {
+                    // RFID ověření
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .select('*')
+                        .or(`rfid_card_id.eq.${rfidValue},nfc_card_id.eq.${rfidValue}`)
+                        .limit(1);
+                    
+                    if (error) throw error;
+                    
+                    if (data && data.length > 0) {
+                        user = data[0];
+                    } else {
+                        // Neregistrovaná karta - umožníme jako HOST
+                        user = {
+                            id: null,
+                            name: 'HOST',
+                            rfid_card_id: rfidValue,
+                            balance: 0
+                        };
+                    }
+                } else {
+                    // Biometrické nebo NFC ověření - probíhá v samostatných funkcích
+                    // a volá tuto funkci až po ověření
+                    return;
+                }
+                
+                // Pokud máme uživatele, pokračujeme na formulář pro datum
+                if (user) {
+                    // Uložíme ID uživatele do global scope pro pozdější použití
+                    currentDescalingUser = user;
+                    
+                    // Skrýt auth dialog
+                    document.getElementById('descalingAuthPrompt').classList.add('hidden');
+                    
+                    // Zobrazit formulář pro datum
+                    showDescalingDateForm(user);
+                    
+                    // Zobrazit toast
+                    showToast('✅', 'Ověřeno', `Uživatel ${user.name} úspěšně ověřen`, 'success');
+                } else {
+                    throw new Error('Nepodařilo se ověřit uživatele');
+                }
+                
+            } catch (error) {
+                console.error('Chyba při ověřování pro odvápnění:', error);
+                document.getElementById('descalingAuthError').textContent = 'Chyba při ověřování. Zkuste to znovu.';
+                document.getElementById('descalingAuthError').classList.remove('hidden');
+            }
+        }
+        
+        // Použití NFC pro ověření odvápnění
+        async function useNFCForDescaling() {
+            try {
+                showToast('📱', 'NFC', 'Přiložte kartu k telefonu...', 'info');
+                
+                if (!("NDEFReader" in window)) {
+                    throw new Error('NFC není podporováno ve vašem prohlížeči. Použijte prosím Chrome na Android zařízení.');
+                }
+                
+                const ndef = new NDEFReader();
+                await ndef.scan();
+                
+                ndef.addEventListener("reading", ({ serialNumber }) => {
+                    console.log(`> Serial Number: ${serialNumber}`);
+                    handleDescalingAuth(serialNumber);
+                });
+                
+            } catch (error) {
+                console.error('❌ Chyba při spuštění NFC přihlášení:', error);
+                console.error('❌ Error name:', error.name);
+                console.error('❌ Error message:', error.message);
+                
+                if (error.name === 'NotAllowedError') {
+                    showToast('❌', 'NFC Error', 'Přístup k NFC byl zamítnut. Povolte prosím přístup k NFC ve vašem prohlížeči.', 'error');
+                } else if (error.name === 'NotSupportedError') {
+                    showToast('❌', 'NFC Error', 'NFC není podporováno ve vašem prohlížeči nebo zařízení. Použijte Chrome na Android.', 'error');
+                } else {
+                    showToast('❌', 'NFC Error', `Chyba NFC: ${error.message}`, 'error');
+                }
+                
+                // Vrátit se na hlavní obrazovku
+                hideDescalingPrompts();
+                const loginScreen = document.getElementById('loginScreen');
+                if (loginScreen) {
+                    loginScreen.classList.remove('hidden');
+                }
+            }
+        }
+        
+        // Použití biometrického ověření pro odvápnění
+        async function useBiometricForDescaling() {
+            try {
+                // Ověření dostupnosti WebAuthn API
+                const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+                
+                if (!available) {
+                    throw new Error('Biometrické ověření není k dispozici na tomto zařízení');
+                }
+                
+                showToast('👆', 'Biometrické', 'Použijte biometrické ověření...', 'info');
+                
+                // Vytvoření challenge pro autentifikaci
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+                
+                // Získání allowCredentials z databáze - všechny biometrické ID pro nabídnutí uživateli
+                const { data: users, error } = await supabaseClient
+                    .from('users')
+                    .select('id, name, biometric_id')
+                    .not('biometric_id', 'is', null)
+                    .order('name', { ascending: true });
+                
+                if (error) throw error;
+                
+                // Vytvoření seznamu allowCredentials
+                const allowCredentials = users
+                    .filter(user => user.biometric_id) // Pouze uživatelé s biometric_id
+                    .map(user => {
+                        try {
+                            // Převod base64url na ArrayBuffer
+                            const rawId = base64URLToArrayBuffer(user.biometric_id);
+                            
+                            return {
+                                type: 'public-key',
+                                id: rawId,
+                                transports: ['internal']
+                            };
+                        } catch (e) {
+                            console.error('Chyba při zpracování biometric_id:', e);
+                            return null;
+                        }
+                    })
+                    .filter(Boolean); // Odstranit null hodnoty
+                
+                // Definice parametrů pro autentifikaci
+                const publicKeyOptions = {
+                    // Náhodná výzva
+                    challenge: challenge,
+                    
+                    // Identifikace RP
+                    rpId: window.location.hostname,
+                    
+                    // Seznam povolených credentials
+                    allowCredentials: allowCredentials,
+                    
+                    // Timeout v milisekundách
+                    timeout: 60000,
+                    
+                    // Požadovat uživatelské ověření
+                    userVerification: 'preferred',
+                };
+                
+                // Provedení autentifikace
+                const credential = await navigator.credentials.get({
+                    publicKey: publicKeyOptions
+                });
+                
+                if (credential) {
+                    // Uspěšné biometrické ověření
+                    console.log('✅ Biometrické ověření úspěšné!');
+                    
+                    // Získání credential ID jako base64url string
+                    const rawId = new Uint8Array(credential.rawId);
+                    const credentialIdBase64 = arrayBufferToBase64URL(rawId);
+                    
+                    // Vyhledat uživatele podle credential ID
+                    const { data, error } = await supabaseClient
+                        .from('users')
+                        .select('*')
+                        .eq('biometric_id', credentialIdBase64)
+                        .limit(1);
+                    
+                    if (error) throw error;
+                    
+                    if (data && data.length > 0) {
+                        const user = data[0];
+                        // Uložíme ID uživatele do global scope pro pozdější použití
+                        currentDescalingUser = user;
+                        
+                        // Skrýt auth dialog
+                        document.getElementById('descalingAuthPrompt').classList.add('hidden');
+                        
+                        // Zobrazit formulář pro datum
+                        showDescalingDateForm(user);
+                        
+                        // Zobrazit toast
+                        showToast('✅', 'Ověřeno', `Uživatel ${user.name} úspěšně ověřen (biometricky)`, 'success');
+                    } else {
+                        throw new Error('Uživatel s tímto biometrickým ID nebyl nalezen');
+                    }
+                } else {
+                    throw new Error('Biometrické ověření selhalo - žádné credential vráceno');
+                }
+                
+            } catch (error) {
+                console.error('❌ Chyba při biometrickém ověření:', error);
+                console.error('❌ Error name:', error.name);
+                console.error('❌ Error message:', error.message);
+                
+                if (error.name === 'NotAllowedError') {
+                    showToast('❌', 'Biometric Error', 'Biometrické ověření bylo zrušeno nebo není dostupné. Potřebujete se nejprve zaregistrovat v admin sekci.', 'error');
+                } else if (error.name === 'NotSupportedError') {
+                    showToast('❌', 'Biometric Error', 'Biometrické ověření není podporováno na vašem zařízení nebo prohlížeči. Zkuste Edge nebo Chrome.', 'error');
+                } else if (error.name === 'InvalidStateError') {
+                    showToast('❌', 'Biometric Error', 'Nejsou k dispozici žádné přístupové klíče na tomto zařízení. Zkuste se nejprve zaregistrovat v admin sekci.', 'error');
+                } else {
+                    showToast('❌', 'Biometric Error', `Chyba biometrického ověření: ${error.message}`, 'error');
+                }
+                
+                // Vrátit se na hlavní obrazovku
+                hideDescalingPrompts();
+                const loginScreen = document.getElementById('loginScreen');
+                if (loginScreen) {
+                    loginScreen.classList.remove('hidden');
+                }
+            }
+        }
+        
+        // Zobrazení formuláře pro zadání datumu odvápnění
+        function showDescalingDateForm(user) {
+            // Skrýt případné dialogy a zobrazit formulář
+            hideDescalingPrompts();
+            document.getElementById('descalingDateForm').classList.remove('hidden');
+            
+            // Nastavit dnešní datum jako výchozí
+            const today = new Date();
+            const dateField = document.getElementById('descalingDate');
+            dateField.valueAsDate = today;
+            dateField.max = today.toISOString().split('T')[0]; // Omezit na dnešní datum
+        }
+        
+        // Skrýt všechny dialogy odvápnění
+        function hideDescalingPrompts() {
+            document.getElementById('descalingAuthPrompt').classList.add('hidden');
+            document.getElementById('descalingDateForm').classList.add('hidden');
+        }
+        
+        // Uložení záznamu o odvápnění do databáze
+        async function saveDescalingRecord() {
+            try {
+                if (!currentDescalingUser) {
+                    throw new Error('Chybí uživatelská identifikace');
+                }
+                
+                // Získat datum z formuláře
+                const descalingDate = document.getElementById('descalingDate').value;
+                if (!descalingDate) {
+                    throw new Error('Prosím zadejte platné datum');
+                }
+                
+                // Formátovat datum pro zobrazení v češtině
+                const formattedDate = new Date(descalingDate)
+                    .toLocaleDateString('cs-CZ', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric' 
+                    });
+                
+                // Vytvoření transakce
+                const { data, error } = await supabaseClient
+                    .from('transactions')
+                    .insert([
+                        {
+                            user_id: currentDescalingUser.id,
+                            type: 'descaling',
+                            amount: 0,
+                            description: `Odvápnění provedeno ${formattedDate}`
+                        }
+                    ]);
+                
+                if (error) throw error;
+                
+                // Zobrazit toast
+                showToast('✅', 'Úspěch', `Záznam o odvápnění byl uložen (${formattedDate})`, 'success');
+                
+                // Aktualizovat poslední datum odvápnění
+                loadLastDescalingDate();
+                
+                // Skrýt formulář a vrátit se na hlavní obrazovku
+                hideDescalingPrompts();
+                const loginScreen = document.getElementById('loginScreen');
+                if (loginScreen) {
+                    loginScreen.classList.remove('hidden');
+                }
+                
+            } catch (error) {
+                console.error('Chyba při ukládání záznamu o odvápnění:', error);
+                showToast('❌', 'Chyba', `Nepodařilo se uložit záznam: ${error.message}`, 'error');
+                
+                // Vrátit se na hlavní obrazovku
+                hideDescalingPrompts();
+                const loginScreen2 = document.getElementById('loginScreen');
+                if (loginScreen2) {
+                    loginScreen2.classList.remove('hidden');
+                }
+            }
+        }
+        
+        // Načtení posledního datumu odvápnění
+        async function loadLastDescalingDate() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('transactions')
+                    .select('*')
+                    .eq('type', 'descaling')
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+                
+                if (error) throw error;
+                
+                const lastDescalingDateEl = document.getElementById('lastDescalingDate');
+                
+                if (data && data.length > 0) {
+                    const lastRecord = data[0];
+                    const descriptionMatch = lastRecord.description.match(/Odvápnění provedeno (\d{2}\.\d{2}\.\d{4})/);
+                    
+                    if (descriptionMatch && descriptionMatch[1]) {
+                        lastDescalingDateEl.textContent = `Poslední: ${descriptionMatch[1]}`;
+                    } else {
+                        // Pokud popis neobsahuje datum, použijeme datum vytvoření záznamu
+                        const createdDate = new Date(lastRecord.created_at)
+                            .toLocaleDateString('cs-CZ', { 
+                                day: '2-digit', 
+                                month: '2-digit', 
+                                year: 'numeric' 
+                            });
+                        lastDescalingDateEl.textContent = `Poslední: ${createdDate}`;
+                    }
+                } else {
+                    lastDescalingDateEl.textContent = 'Žádný záznam';
+                }
+                
+            } catch (error) {
+                console.error('Chyba při načítání posledního datumu odvápnění:', error);
+                document.getElementById('lastDescalingDate').textContent = 'Chyba načítání';
+            }
+        }
+        
+        // Inicializace globální proměnné pro aktuálního uživatele odvápnění
+        let currentDescalingUser = null;
+        
+        // Event Listeners pro odvápnění
+        document.addEventListener('DOMContentLoaded', () => {
+            // Tlačítko pro odvápnění
+            const descalingBtn = document.getElementById('descalingBtn');
+            if (descalingBtn) {
+                descalingBtn.addEventListener('click', () => {
+                    showDescalingAuthPrompt();
+                });
+            }
+            
+            // RFID input pro odvápnění
+            const descalingRfidInput = document.getElementById('descalingRfidInput');
+            if (descalingRfidInput) {
+                descalingRfidInput.addEventListener('input', (event) => {
+                    const value = event.target.value.trim();
+                    if (value.length >= 10) {
+                        handleDescalingAuth(value);
+                    }
+                });
+            }
+            
+            // NFC tlačítko pro odvápnění
+            const descalingNfcBtn = document.getElementById('descalingNfcBtn');
+            if (descalingNfcBtn) {
+                descalingNfcBtn.addEventListener('click', () => {
+                    useNFCForDescaling();
+                });
+            }
+            
+            // Biometrické tlačítko pro odvápnění
+            const descalingBioBtn = document.getElementById('descalingBioBtn');
+            if (descalingBioBtn) {
+                descalingBioBtn.addEventListener('click', () => {
+                    useBiometricForDescaling();
+                });
+            }
+            
+            // Zrušit tlačítko pro auth dialog
+            const cancelDescalingAuthBtn = document.getElementById('cancelDescalingAuthBtn');
+            if (cancelDescalingAuthBtn) {
+                cancelDescalingAuthBtn.addEventListener('click', () => {
+                    hideDescalingPrompts();
+                    const loginScreen = document.getElementById('loginScreen');
+                    if (loginScreen) {
+                        loginScreen.classList.remove('hidden');
+                    }
+                });
+            }
+            
+            // Tlačítko pro uložení záznamu o odvápnění
+            const saveDescalingBtn = document.getElementById('saveDescalingBtn');
+            if (saveDescalingBtn) {
+                saveDescalingBtn.addEventListener('click', () => {
+                    saveDescalingRecord();
+                });
+            }
+            
+            // Zrušit tlačítko pro formulář datumu
+            const cancelDescalingDateBtn = document.getElementById('cancelDescalingDateBtn');
+            if (cancelDescalingDateBtn) {
+                cancelDescalingDateBtn.addEventListener('click', () => {
+                    hideDescalingPrompts();
+                    const loginScreen = document.getElementById('loginScreen');
+                    if (loginScreen) {
+                        loginScreen.classList.remove('hidden');
+                    }
+                });
+            }
+            
+            // Načíst poslední datum odvápnění při startu
+            loadLastDescalingDate();
+        });
     </script>
 </body>
 </html>
