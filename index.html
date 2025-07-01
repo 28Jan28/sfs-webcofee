@@ -402,7 +402,7 @@
             <!-- Zobrazení verze aplikace -->
             <div class="mt-3 sm:mt-4 text-center">
                 <span class="text-xs sm:text-sm px-3 py-1 rounded-full" style="background: rgba(235, 60, 36, 0.1); color: var(--red); font-weight: bold; border: 1px solid var(--red);">
-                    📋 WEBCofee v1.15 (Kiosk Mode)
+                    📋 WEBCofee v1.16 (Kiosk Mode)
                 </span>
             </div>
             
@@ -417,6 +417,7 @@
                         class="input-field w-full p-3 text-center font-mono font-bold text-sm sm:text-base"
                         placeholder="Čekání na admin kartu..."
                         autocomplete="off"
+                        readonly
                     >
                     <div id="adminLoginError" class="error-message p-2 mt-2 sm:mt-3 hidden text-xs sm:text-sm"></div>
                     <div class="text-xs mt-2 text-white">Tip: Pro admin přístup přiložte správnou kartu</div>
@@ -1455,14 +1456,31 @@
             if (manualAdminBtn) {
                 manualAdminBtn.addEventListener('click', (event) => {
                     event.preventDefault();
-                    console.log('Kliknuto na Zadat ručně');
-                    // Přímo vložíme admin kartu do inputu
+                    console.log('Kliknuto na Zadat ručně - povoluje manuální zadání');
+                    
+                    // BEZPEČNOSTNÍ OPRAVA: Pouze povolíme manuální zadání, 
+                    // NEVKLÁDÁME automaticky admin kartu!
                     const adminInput = document.getElementById('adminRfidInput');
                     if (adminInput) {
-                        adminInput.value = ADMIN_RFID;
-                        // Simulujeme událost input, aby se aktivoval handler
-                        const inputEvent = new Event('input', { bubbles: true });
-                        adminInput.dispatchEvent(inputEvent);
+                        // Pouze změníme placeholder a povolíme editaci
+                        adminInput.placeholder = 'Zadejte admin RFID kartu (10 číslic)';
+                        adminInput.value = ''; // Vyčistíme pole
+                        adminInput.focus(); // Fokus na input
+                        adminInput.readOnly = false; // Povolíme editaci
+                        
+                        console.log('Admin input je nyní připraven pro manuální zadání');
+                        
+                        // Změníme text tlačítka, aby bylo jasné, že je v manuálním režimu
+                        manualAdminBtn.textContent = '✓ Manuální režim';
+                        manualAdminBtn.disabled = true; // Zakážeme opětovné kliknutí
+                        
+                        // Info pro uživatele
+                        const adminError = document.getElementById('adminLoginError');
+                        if (adminError) {
+                            adminError.textContent = '💡 Nyní můžete zadat admin kartu ručně';
+                            adminError.classList.remove('hidden');
+                            adminError.style.color = '#059669'; // Zelená barva pro info
+                        }
                     }
                 });
             } else {
@@ -1584,8 +1602,25 @@
                     const adminInput = document.getElementById('adminRfidInput');
                     if (adminInput) {
                         adminInput.value = ''; // Vyčistíme případnou předchozí hodnotu
+                        // BEZPEČNOSTNÍ OPRAVA: Nastavíme bezpečný výchozí stav
+                        adminInput.placeholder = 'Čekání na admin kartu...';
+                        adminInput.readOnly = true; // Zakážeme editaci
                         adminInput.focus();
-                        console.log('Admin input zaměřen');
+                        console.log('Admin input zaměřen v bezpečném režimu');
+                        
+                        // Reset tlačítka "Zadat ručně" do bezpečného stavu
+                        const manualBtn = document.getElementById('manualAdminBtn');
+                        if (manualBtn) {
+                            manualBtn.textContent = 'Zadat ručně';
+                            manualBtn.disabled = false;
+                        }
+                        
+                        // Skrytí případných chybových zpráv
+                        const adminError = document.getElementById('adminLoginError');
+                        if (adminError) {
+                            adminError.classList.add('hidden');
+                            adminError.style.color = '';
+                        }
                     } else {
                         console.error('Element adminRfidInput nenalezen!');
                     }
@@ -1604,6 +1639,23 @@
                 const adminInput = document.getElementById('adminRfidInput');
                 if (adminInput) {
                     adminInput.value = '';
+                    // BEZPEČNOSTNÍ OPRAVA: Reset do bezpečného stavu
+                    adminInput.placeholder = 'Čekání na admin kartu...';
+                    adminInput.readOnly = true;
+                }
+                
+                // Reset tlačítka "Zadat ručně" do původního stavu
+                const manualBtn = document.getElementById('manualAdminBtn');
+                if (manualBtn) {
+                    manualBtn.textContent = 'Zadat ručně';
+                    manualBtn.disabled = false;
+                }
+                
+                // Skrytí chybové/info zprávy
+                const adminError = document.getElementById('adminLoginError');
+                if (adminError) {
+                    adminError.classList.add('hidden');
+                    adminError.style.color = ''; // Reset barvy
                 }
             } else {
                 console.error('Element adminRfidPrompt nenalezen!');
