@@ -319,7 +319,34 @@
             
             <!-- Logo firmy - responzivní pozice -->
             <div class="absolute top-2 sm:top-3 right-2 sm:right-3">
-                <img src="60v4bruhye.png" alt="SFS Logo" class="h-6 sm:h-8 w-auto">
+                <img src="60v4bruhye.png" alt="SFS Logo" class="h-6 sm:h-8 w-auto" onerror="if (this.src.indexOf('images/') === -1) this.src = 'images/60v4bruhye.png'; else this.src = '../60v4bruhye.png';">
+                <!-- Fallbacky pro různé umístění loga v kiosk módu -->
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const logoImg = document.querySelector('img[alt="SFS Logo"]');
+                        if (logoImg) {
+                            const checkImage = (src) => {
+                                return new Promise((resolve) => {
+                                    const img = new Image();
+                                    img.onload = () => resolve(true);
+                                    img.onerror = () => resolve(false);
+                                    img.src = src;
+                                });
+                            };
+                            
+                            // Zkontrolujeme různé možné cesty k logu
+                            checkImage('60v4bruhye.png').then(exists => {
+                                if (exists) logoImg.src = '60v4bruhye.png';
+                                else checkImage('images/60v4bruhye.png').then(exists => {
+                                    if (exists) logoImg.src = 'images/60v4bruhye.png';
+                                    else checkImage('../60v4bruhye.png').then(exists => {
+                                        if (exists) logoImg.src = '../60v4bruhye.png';
+                                    });
+                                });
+                            });
+                        }
+                    });
+                </script>
             </div>
             
             <!-- Stav pokladny - responzivní pozice -->
@@ -330,6 +357,9 @@
             
             <div class="coffee-icon mb-4 mt-12 sm:mt-8 text-3xl sm:text-4xl">☕</div>
             <h1 class="text-xl sm:text-2xl title-text mb-2">WEBCofee</h1>
+            <div class="text-sm sm:text-base font-semibold mb-2" style="color: var(--red);">
+                🕕 Otevřeno od 06:00 do 18:00 hodin
+            </div>
             <p class="text-black mb-4 sm:mb-6 font-medium text-sm sm:text-base px-2">Přiložte RFID kartu pro přihlášení</p>
             
             <div class="relative mb-4 sm:mb-6">
@@ -372,7 +402,7 @@
             <!-- Zobrazení verze aplikace -->
             <div class="mt-3 sm:mt-4 text-center">
                 <span class="text-xs sm:text-sm px-3 py-1 rounded-full" style="background: rgba(235, 60, 36, 0.1); color: var(--red); font-weight: bold; border: 1px solid var(--red);">
-                    📋 WEBCofee v1.14 (Kiosk Mode)
+                    📋 WEBCofee v1.15 (Kiosk Mode)
                 </span>
             </div>
             
