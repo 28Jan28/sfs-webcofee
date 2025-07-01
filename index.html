@@ -402,7 +402,7 @@
             <!-- Zobrazení verze aplikace -->
             <div class="mt-3 sm:mt-4 text-center">
                 <span class="text-xs sm:text-sm px-3 py-1 rounded-full" style="background: rgba(235, 60, 36, 0.1); color: var(--red); font-weight: bold; border: 1px solid var(--red);">
-                    📋 WEBCofee v1.16 (Kiosk Mode)
+                    📋 WEBCofee v1.17 (Kiosk Mode)
                 </span>
             </div>
             
@@ -533,11 +533,11 @@
                                 <th class="text-left p-2 sm:p-3">📅 Datum</th>
                                 <th class="text-left p-2 sm:p-3">📋 Typ</th>
                                 <th class="text-right p-2 sm:p-3">💰 Částka</th>
-                                <th class="text-left p-2 sm:p-3 hidden sm:table-cell">📝 Popis</th>
+
                             </tr>
                         </thead>
                         <tbody id="userTransactionsList">
-                            <tr><td colspan="4" class="text-center p-3 font-medium">Načítání transakcí...</td></tr>
+                            <tr><td colspan="3" class="text-center p-3 font-medium">Načítání transakcí...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -691,11 +691,11 @@
                                         <th class="text-left p-2 hidden sm:table-cell">👤 Uživatel</th>
                                         <th class="text-left p-2">📋 Typ</th>
                                         <th class="text-right p-2">💰 Částka</th>
-                                        <th class="text-left p-2 hidden lg:table-cell">📝 Popis</th>
+
                                     </tr>
                                 </thead>
                                 <tbody id="allTransactionsList">
-                                    <tr><td colspan="5" class="text-center p-3 font-medium">Načítání transakcí...</td></tr>
+                                    <tr><td colspan="4" class="text-center p-3 font-medium">Načítání transakcí...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -3062,16 +3062,15 @@
                                 <td class="font-medium p-2 sm:p-3">${formattedDate}</td>
                                 <td class="font-medium p-2 sm:p-3">${icon} ${typeText}</td>
                                 <td class="${color} p-2 sm:p-3 text-right">${amount} Kč</td>
-                                <td class="font-medium p-2 sm:p-3 hidden sm:table-cell">${trans.description}</td>
                             </tr>
                         `;
                     });
                 } else {
-                    transListEl.innerHTML = '<tr><td colspan="4" class="text-center p-3 font-medium">❌ Žádné transakce</td></tr>';
+                    transListEl.innerHTML = '<tr><td colspan="3" class="text-center p-3 font-medium">❌ Žádné transakce</td></tr>';
                 }
             } catch (error) {
                 console.error('Chyba při načítání transakcí:', error);
-                document.getElementById('userTransactionsList').innerHTML = '<tr><td colspan="4" class="text-center p-3 font-medium" style="color: var(--red);">❌ Nepodařilo se načíst transakce</td></tr>';
+                document.getElementById('userTransactionsList').innerHTML = '<tr><td colspan="3" class="text-center p-3 font-medium" style="color: var(--red);">❌ Nepodařilo se načíst transakce</td></tr>';
             }
         }
         
@@ -3098,7 +3097,10 @@
                         let color, amount, icon, typeText, userName;
                         
                         if (trans.type === 'cash_register') {
-                            // Transakce pokladny
+                            // Speciální zpracování pro transakce pokladny - dvouřádkové zobrazení
+                            
+                            // Nastavení barvy, ikony a částky
+                            let color, amount, icon;
                             if (trans.description.includes('Navýšení')) {
                                 color = 'transaction-credit';
                                 amount = `+${trans.amount} Kč`;
@@ -3108,47 +3110,81 @@
                                 amount = `-${trans.amount} Kč`;
                                 icon = '💵';
                             }
-                            typeText = 'Pokladna';
-                            userName = '💰 Pokladna';
-                        } else if (trans.type === 'credit') {
-                            // Dobití kreditu
-                            color = 'transaction-credit';
-                            amount = `+${trans.amount} Kč`;
-                            icon = '💰';
-                            typeText = 'Dobití';
-                            userName = `👤 ${trans.users?.name || 'Neznámý uživatel'}`;
-                        } else if (trans.type === 'descaling') {
-                            // Odvápnění
-                            color = 'transaction-descaling';
-                            amount = `0 Kč`;
-                            icon = '🧹';
-                            typeText = 'Odvápnění';
-                            userName = `👤 ${trans.users?.name || 'Neznámý uživatel'}`;
+                            
+                            const typeText = 'Pokladna';
+                            const userName = '💰 Pokladna';
+                            
+                            // Extrakce poznámky z description (text v závorkách)
+                            const noteMatch = trans.description.match(/\(([^)]+)\)/);
+                            const note = noteMatch ? noteMatch[1] : '';
+                            
+                            // Hlavní řádek transakce
+                            transListEl.innerHTML += `
+                                <tr>
+                                    <td class="font-medium p-2">${formattedDate}</td>
+                                    <td class="font-medium p-2 hidden sm:table-cell">${userName}</td>
+                                    <td class="font-medium p-2">${icon} ${typeText}</td>
+                                    <td class="${color} p-2 text-right">${amount}</td>
+                                </tr>
+                            `;
+                            
+                            // Druhý řádek s poznámkou (pouze pokud existuje)
+                            if (note && note.trim()) {
+                                transListEl.innerHTML += `
+                                    <tr class="bg-gray-50">
+                                        <td class="p-2 text-xs text-gray-600" colspan="4">
+                                            <div class="flex items-center ml-4">
+                                                <span class="mr-2">💬</span>
+                                                <span class="italic">${note}</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            }
                         } else {
-                            // Objednávka kávy
-                            color = 'transaction-debit';
-                            amount = `-${Math.abs(trans.amount)} Kč`;
-                            icon = '☕';
-                            typeText = 'Objednávka';
-                            userName = `👤 ${trans.users?.name || 'Neznámý uživatel'}`;
+                            // Standardní zpracování pro ostatní typy transakcí
+                            let color, amount, icon, typeText, userName;
+                            
+                            if (trans.type === 'credit') {
+                                // Dobití kreditu
+                                color = 'transaction-credit';
+                                amount = `+${trans.amount} Kč`;
+                                icon = '💰';
+                                typeText = 'Dobití';
+                                userName = `👤 ${trans.users?.name || 'Neznámý uživatel'}`;
+                            } else if (trans.type === 'descaling') {
+                                // Odvápnění
+                                color = 'transaction-descaling';
+                                amount = `0 Kč`;
+                                icon = '🧹';
+                                typeText = 'Odvápnění';
+                                userName = `👤 ${trans.users?.name || 'Neznámý uživatel'}`;
+                            } else {
+                                // Objednávka kávy
+                                color = 'transaction-debit';
+                                amount = `-${Math.abs(trans.amount)} Kč`;
+                                icon = '☕';
+                                typeText = 'Objednávka';
+                                userName = `👤 ${trans.users?.name || 'Neznámý uživatel'}`;
+                            }
+                            
+                            // Standardní jednořádkové zobrazení
+                            transListEl.innerHTML += `
+                                <tr>
+                                    <td class="font-medium p-2">${formattedDate}</td>
+                                    <td class="font-medium p-2 hidden sm:table-cell">${userName}</td>
+                                    <td class="font-medium p-2">${icon} ${typeText}</td>
+                                    <td class="${color} p-2 text-right">${amount}</td>
+                                </tr>
+                            `;
                         }
-                        
-                        transListEl.innerHTML += `
-                            <tr>
-                                <td class="font-medium p-2">${formattedDate}</td>
-                                <td class="font-medium p-2 hidden sm:table-cell">${userName}</td>
-                                <td class="font-medium p-2">${icon} ${typeText}</td>
-                                <td class="${color} p-2 text-right">${amount}</td>
-                                <td class="font-medium p-2 hidden lg:table-cell">${trans.description}</td>
-                            </tr>
-                        `;
                     });
                 } else {
-                    transListEl.innerHTML = '<tr><td colspan="5" class="text-center p-3 font-medium">❌ Žádné transakce</td></tr>';
+                    transListEl.innerHTML = '<tr><td colspan="4" class="text-center p-3 font-medium">❌ Žádné transakce</td></tr>';
                 }
             } catch (error) {
                 console.error('Chyba při načítání transakcí:', error);
-                document.getElementById('allTransactionsList').innerHTML = '<tr><td colspan="5" class="text-center p-3 font-medium" style="color: var(--red);">❌ Nepodařilo se načíst transakce</td></tr>';
+                document.getElementById('allTransactionsList').innerHTML = '<tr><td colspan="4" class="text-center p-3 font-medium" style="color: var(--red);">❌ Nepodařilo se načíst transakce</td></tr>';
             }
         }
         
